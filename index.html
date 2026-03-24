@@ -800,11 +800,11 @@ function fracToCommonDenom(f,D){const n=Math.round(f.n*(D/f.d));return n+'/'+D;}
 function parseProbInput(s){if(!s||s.trim()==='')return null;s=s.trim().replace(',','.');const fm=s.match(/^(-?\d+)\s*\/\s*(\d+)$/);if(fm){const n=parseInt(fm[1]),d=parseInt(fm[2]);if(d===0)return null;return fracNew(n,d);}const v=parseFloat(s);if(isNaN(v)||v<0)return null;return fracFromFloat(v);}
 
 // SVG-Zeichenhilfen
-const OL_GAP=5,OL_THICK=2.5;
+const OL_GAP=7,OL_THICK=2.0;
 function svgChar(char,overline,cx,baselineY,fontSize,color,bold){
   const fw=bold?'bold':'normal';
   let out='<text x="'+cx+'" y="'+baselineY+'" text-anchor="middle" dominant-baseline="text-after-edge" font-size="'+fontSize+'" font-weight="'+fw+'" fill="'+color+'">'+escHtml(char)+'</text>';
-  if(overline){const capH=fontSize*0.71;const lineY=baselineY-capH-OL_GAP;const hw=fontSize*0.42;out+='<line x1="'+(cx-hw)+'" y1="'+lineY+'" x2="'+(cx+hw)+'" y2="'+lineY+'" stroke="'+color+'" stroke-width="'+OL_THICK+'" stroke-linecap="round"/>';}
+  if(overline){const capH=fontSize*0.71;const lineY=baselineY-capH-OL_GAP;const hw=fontSize*0.30;out+='<line x1="'+(cx-hw)+'" y1="'+lineY+'" x2="'+(cx+hw)+'" y2="'+lineY+'" stroke="'+color+'" stroke-width="'+OL_THICK+'" stroke-linecap="round"/>';}
   return out;
 }
 function svgSequence(parts,cx,baselineY,fontSize,color){
