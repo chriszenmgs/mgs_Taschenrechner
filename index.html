@@ -49,8 +49,9 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}
 th{color:#e94560;padding:6px 10px;border-bottom:1px solid #253a5e;text-align:left}
 td{padding:5px 10px;border-bottom:1px solid #1a2a4a;color:#ddd}
 tr:hover td{background:#1a2a4a}
-.chart-container{position:relative;margin-top:14px;background:#fff;border-radius:10px;border:2px solid #aaa;overflow:hidden}
-.chart-container canvas{width:100%!important;display:block}
+/* Diagramme: feste, kompakte Höhe */
+.chart-container{position:relative;margin-top:14px;background:#fff;border-radius:10px;border:2px solid #aaa;overflow:hidden;height:320px}
+.chart-container canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
 .info{font-size:.82rem;color:#aaa;margin-top:4px}
 .error-msg{background:#3a0a0a;border:1px solid #e94560;color:#ff8a8a;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:.9rem}
 .hl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;align-items:center}
@@ -178,9 +179,8 @@ tr:hover td{background:#1a2a4a}
     <button class="hl-btn hl-none" id="hl-none" onclick="setHL('none');binomLive()">Keine</button>
   </div>
   <div class="result-box" id="binom-result"></div>
-  <div class="chart-container"><canvas id="binom-chart" height="350"></canvas></div>
+  <div class="chart-container"><canvas id="binom-chart"></canvas></div>
   <div class="export-row">
-    <button class="exp-btn exp-svg" onclick="exportChartPNG('binom-chart','binomialverteilung')">💾 SVG</button>
     <button class="exp-btn exp-png" onclick="exportChartPNG('binom-chart','binomialverteilung')">🖼️ PNG</button>
     <button class="exp-btn" style="background:#f9a825;color:#000" onclick="exportBinomCSV()">📊 CSV</button>
   </div>
@@ -209,9 +209,8 @@ tr:hover td{background:#1a2a4a}
   </div>
   <div id="stab-error"></div>
   <div id="stab-stats" class="result-box" style="display:none"></div>
-  <div class="chart-container"><canvas id="stab-chart" height="350"></canvas></div>
+  <div class="chart-container"><canvas id="stab-chart"></canvas></div>
   <div class="export-row">
-    <button class="exp-btn exp-svg" onclick="exportChartPNG('stab-chart','stabdiagramm')">💾 SVG</button>
     <button class="exp-btn exp-png" onclick="exportChartPNG('stab-chart','stabdiagramm')">🖼️ PNG</button>
   </div>
 </div></div>
@@ -230,9 +229,8 @@ tr:hover td{background:#1a2a4a}
   </div>
   <div id="hist-error"></div>
   <div id="hist-result" class="result-box" style="display:none"></div>
-  <div class="chart-container"><canvas id="hist-chart" height="350"></canvas></div>
+  <div class="chart-container"><canvas id="hist-chart"></canvas></div>
   <div class="export-row">
-    <button class="exp-btn exp-svg" onclick="exportChartPNG('hist-chart','histogramm')">💾 SVG</button>
     <button class="exp-btn exp-png" onclick="exportChartPNG('hist-chart','histogramm')">🖼️ PNG</button>
     <button class="exp-btn" style="background:#f9a825;color:#000" onclick="exportHistCSV()">📊 CSV</button>
   </div>
@@ -260,9 +258,8 @@ tr:hover td{background:#1a2a4a}
     <label>Punkte</label><input type="number" id="graph-pts" value="600" min="50" max="2000" style="width:80px" oninput="drawGraph()">
   </div>
   <p class="info">Ganzrationale: x^3+2*x−1 | Exponential: exp(x) | Trig: sin(x)</p>
-  <div class="chart-container"><canvas id="graph-chart" height="400"></canvas></div>
+  <div class="chart-container"><canvas id="graph-chart"></canvas></div>
   <div class="export-row">
-    <button class="exp-btn exp-svg" onclick="exportChartPNG('graph-chart','graphenplotter')">💾 SVG</button>
     <button class="exp-btn exp-png" onclick="exportChartPNG('graph-chart','graphenplotter')">🖼️ PNG</button>
   </div>
 </div></div>
@@ -350,20 +347,21 @@ tr:hover td{background:#1a2a4a}
 </div></div>
 
 <script>
-// ─────────────────────────────────────────────
-// HILFSFUNKTIONEN
-// ─────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────
 function showTab(n,b){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
   document.getElementById('tab-'+n).classList.add('active');
   if(b)b.classList.add('active');
 }
+
+// ── Winkel ────────────────────────────────────────────────
 let angleMode='DEG';
 function toggleAngle(){angleMode=angleMode==='DEG'?'RAD':'DEG';document.getElementById('angle-mode').textContent=angleMode;}
 const toRad=v=>angleMode==='DEG'?v*Math.PI/180:v;
 const toDeg=v=>angleMode==='DEG'?v*180/Math.PI:v;
 
+// ── Auswertung ────────────────────────────────────────────
 function safeEval(expr){
   let e=expr.replace(/\^/g,'**').replace(/\bpi\b/g,'Math.PI').replace(/\be\b/g,'Math.E')
     .replace(/\bsin\(/g,'_sin(').replace(/\bcos\(/g,'_cos(').replace(/\btan\(/g,'_tan(')
@@ -383,9 +381,7 @@ function fmtTick(v){
   return String(parseFloat(v.toPrecision(5)));
 }
 
-// ─────────────────────────────────────────────
-// MINI-TASTATUR
-// ─────────────────────────────────────────────
+// ── Mini-Tastatur ─────────────────────────────────────────
 const MKB=[
   {l:'sin()',i:'sin('},{l:'cos()',i:'cos('},{l:'tan()',i:'tan('},
   {l:'ln()',i:'ln('},{l:'log()',i:'log('},{l:'√()',i:'sqrt('},
@@ -416,14 +412,10 @@ function buildMiniKbd(cid,getInp){
 let lastGraphInput=null;
 document.addEventListener('focusin',e=>{if(e.target.classList.contains('graph-expr'))lastGraphInput=e.target;});
 
-// ─────────────────────────────────────────────
-// CHART PLUGINS  (als Funktionen – kein globales Objekt mit fester id)
-// ─────────────────────────────────────────────
-
-// Karopapier
+// ── Chart-Plugins ─────────────────────────────────────────
 function makeGridPlugin(){
-  return {
-    id:'gridPaper_'+Math.random().toString(36).slice(2),
+  return{
+    id:'gp_'+Math.random().toString(36).slice(2),
     beforeDraw(chart){
       const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
       if(!scales.x||!scales.y)return;
@@ -455,61 +447,6 @@ function makeGridPlugin(){
     }
   };
 }
-
-// Achsenpfeile + Ticks
-function makeArrowPlugin(xLbl,yLbl){
-  return {
-    id:'axisArrows_'+Math.random().toString(36).slice(2),
-    afterDraw(chart){
-      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
-      if(!scales.x||!scales.y)return;
-      ctx.save();
-      const rx0=scales.x.getPixelForValue(0),ry0=scales.y.getPixelForValue(0);
-      const xY=Math.max(top,Math.min(bottom,ry0));
-      const yX=Math.max(left,Math.min(right,rx0));
-      const aL=14,aW=7;
-      ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=2;
-      // X-Achse
-      ctx.beginPath();ctx.moveTo(left,xY);ctx.lineTo(right+aL,xY);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(right+aL,xY);ctx.lineTo(right,xY-aW);ctx.lineTo(right,xY+aW);ctx.closePath();ctx.fill();
-      // Y-Achse
-      ctx.beginPath();ctx.moveTo(yX,bottom);ctx.lineTo(yX,top-aL);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(yX,top-aL);ctx.lineTo(yX-aW,top-aL+aL);ctx.lineTo(yX+aW,top-aL+aL);ctx.closePath();ctx.fill();
-      // Beschriftungen
-      ctx.font='bold 14px Segoe UI';ctx.fillStyle='#111';
-      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+2,xY-aW);
-      ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);
-      // Ticks
-      const MARGIN=32,BOTTOM_CLEAR=20;
-      ctx.font='13px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;
-      // X-Ticks
-      ctx.textAlign='center';ctx.textBaseline='top';
-      // Ticks manuell generieren (da ticks-Array bei leerem dataset leer ist)
-      const xTicks=getAxisTicks(scales.x);
-      xTicks.forEach(v=>{
-        const px=scales.x.getPixelForValue(v);
-        if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)return;
-        ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();
-        if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)return;
-        const ly=Math.min(xY+8,bottom-BOTTOM_CLEAR);
-        ctx.fillText(fmtTick(v),px,ly);
-      });
-      // Y-Ticks
-      ctx.textAlign='right';ctx.textBaseline='middle';
-      const yTicks=getAxisTicks(scales.y);
-      yTicks.forEach(v=>{
-        const py=scales.y.getPixelForValue(v);
-        if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)return;
-        ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();
-        if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)return;
-        ctx.fillText(fmtTick(v),yX-8,py);
-      });
-      ctx.restore();
-    }
-  };
-}
-
-// Ticks selbst berechnen (unabhängig von Chart.js ticks-Array)
 function getAxisTicks(scale){
   const range=scale.max-scale.min;
   const mag=Math.pow(10,Math.floor(Math.log10(range/5)));
@@ -520,18 +457,56 @@ function getAxisTicks(scale){
   for(let v=start;v<=scale.max+1e-10;v+=step)ticks.push(Math.round(v*1e10)/1e10);
   return ticks;
 }
-
+function makeArrowPlugin(xLbl,yLbl){
+  return{
+    id:'ap_'+Math.random().toString(36).slice(2),
+    afterDraw(chart){
+      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
+      if(!scales.x||!scales.y)return;
+      ctx.save();
+      const rx0=scales.x.getPixelForValue(0),ry0=scales.y.getPixelForValue(0);
+      const xY=Math.max(top,Math.min(bottom,ry0));
+      const yX=Math.max(left,Math.min(right,rx0));
+      const aL=14,aW=7;
+      ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(left,xY);ctx.lineTo(right+aL,xY);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(right+aL,xY);ctx.lineTo(right,xY-aW);ctx.lineTo(right,xY+aW);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(yX,bottom);ctx.lineTo(yX,top-aL);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(yX,top-aL);ctx.lineTo(yX-aW,top-aL+aL);ctx.lineTo(yX+aW,top-aL+aL);ctx.closePath();ctx.fill();
+      ctx.font='bold 14px Segoe UI';ctx.fillStyle='#111';
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+2,xY-aW);
+      ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);
+      const MARGIN=32,BC=20;
+      ctx.font='13px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;
+      ctx.textAlign='center';ctx.textBaseline='top';
+      getAxisTicks(scales.x).forEach(v=>{
+        const px=scales.x.getPixelForValue(v);
+        if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)return;
+        ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();
+        if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)return;
+        ctx.fillText(fmtTick(v),px,Math.min(xY+8,bottom-BC));
+      });
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      getAxisTicks(scales.y).forEach(v=>{
+        const py=scales.y.getPixelForValue(v);
+        if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)return;
+        ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();
+        if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)return;
+        ctx.fillText(fmtTick(v),yX-8,py);
+      });
+      ctx.restore();
+    }
+  };
+}
 function makeScales(xMin,xMax,yMin,yMax){
   return{
-    x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false},title:{display:false}},
-    y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false},title:{display:false}}
+    x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false}},
+    y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false}}
   };
 }
 const CPAD={right:48,top:34,left:18,bottom:30};
 
-// ─────────────────────────────────────────────
-// EXPORT
-// ─────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────
 function exportChartPNG(cid,fname){
   const cv=document.getElementById(cid);if(!cv){alert('Kein Diagramm.');return;}
   const out=document.createElement('canvas');out.width=cv.width;out.height=cv.height;
@@ -585,9 +560,7 @@ function exportHistCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';a.click();
 }
 
-// ─────────────────────────────────────────────
-// TASCHENRECHNER
-// ─────────────────────────────────────────────
+// ── Taschenrechner ────────────────────────────────────────
 let calcExpr='',justEvaled=false;
 function updateDisplay(){document.getElementById('expr-display').textContent=calcExpr;}
 function updateMain(v){document.getElementById('main-display').textContent=v;}
@@ -616,9 +589,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();
 });
 
-// ─────────────────────────────────────────────
-// WERTETABELLE
-// ─────────────────────────────────────────────
+// ── Wertetabelle ──────────────────────────────────────────
 function buildTable(){
   const expr=document.getElementById('wt-func').value.trim();
   const from=parseFloat(document.getElementById('wt-from').value);
@@ -638,9 +609,7 @@ function buildTable(){
   res.innerHTML=html+'</table>';
 }
 
-// ─────────────────────────────────────────────
-// BINOMIAL
-// ─────────────────────────────────────────────
+// ── Binomial ──────────────────────────────────────────────
 function binom(n,k){if(k<0||k>n)return 0;if(k===0||k===n)return 1;if(k>n-k)k=n-k;let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;}
 function binomPDF(n,p,k){return binom(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);}
 function binomCDF(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binomPDF(n,p,i);return s;}
@@ -683,21 +652,19 @@ function binomLive(){
   }
   if(binomChartInst)binomChartInst.destroy();
   const gp=makeGridPlugin(),ap=makeArrowPlugin('k','P(X=k)');
-  const bbp={id:'bb',afterDraw(ch){
+  const bbp={id:'bb_'+Math.random().toString(36).slice(2),afterDraw(ch){
     const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
     const bw=Math.abs(xA.getPixelForValue(1)-xA.getPixelForValue(0));
     c.save();barData.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.fillStyle=bCol(pt.x);c.strokeStyle=bStr(pt.x);c.lineWidth=1;c.fillRect(px-bw/2,py,bw,y0-py);c.strokeRect(px-bw/2,py,bw,y0-py);});c.restore();
   }};
   binomChartInst=new Chart(document.getElementById('binom-chart'),{
     type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},
-    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.22)},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.22)},
     plugins:[gp,ap,bbp]
   });
 }
 
-// ─────────────────────────────────────────────
-// STABDIAGRAMM
-// ─────────────────────────────────────────────
+// ── Stabdiagramm ──────────────────────────────────────────
 let stabChartInst=null;
 function drawStab(){
   const xs=document.getElementById('stab-x').value.split(',').map(s=>parseFloat(s.trim()));
@@ -709,8 +676,8 @@ function drawStab(){
   errEl.innerHTML='';
   const errs=[];
   if(xs.some(isNaN))errs.push('⚠ Ungültige x-Werte.');
-  if(ps.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten/Wahrscheinlichkeiten.');
-  if(xs.length!==ps.length)errs.push('⚠ Anzahl x-Werte ('+xs.length+') ≠ Anzahl Einträge ('+ps.length+').');
+  if(ps.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
+  if(xs.length!==ps.length)errs.push('⚠ Anzahl x ('+xs.length+') ≠ Anzahl h ('+ps.length+').');
   if(!xs.some(isNaN)&&!ps.some(isNaN)){
     if(ps.some(v=>v<0))errs.push('⚠ Negative Werte nicht erlaubt.');
     if(type==='prob'){const s=ps.reduce((a,b)=>a+b,0);if(Math.abs(s-1)>.001)errs.push('⚠ Summe = '+s.toFixed(6)+' ≠ 1.');}
@@ -719,13 +686,13 @@ function drawStab(){
   const sum=ps.reduce((a,b)=>a+b,0),mu=xs.reduce((a,x,i)=>a+x*ps[i],0);
   const varV=xs.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);
   statsEl.style.display='block';
-  statsEl.innerHTML='<b>Σ:</b> '+sum.toFixed(6)+' &nbsp;|&nbsp; <b>E(X):</b> '+mu.toFixed(4)+' &nbsp;|&nbsp; <b>Var(X):</b> '+varV.toFixed(4)+' &nbsp;|&nbsp; <b>σ:</b> '+Math.sqrt(varV).toFixed(4);
+  statsEl.innerHTML='<b>Σ:</b> '+sum.toFixed(6)+' | <b>E(X):</b> '+mu.toFixed(4)+' | <b>Var(X):</b> '+varV.toFixed(4)+' | <b>σ:</b> '+Math.sqrt(varV).toFixed(4);
   const minX=Math.min(...xs),maxX=Math.max(...xs),maxP=Math.max(...ps);
   const padX=(maxX-minX)*.15||1;
   const sd=xs.map((x,i)=>({x,y:ps[i]}));
   if(stabChartInst)stabChartInst.destroy();
   const gp=makeGridPlugin(),ap=makeArrowPlugin('x',ylabel);
-  const slp={id:'sl',afterDraw(ch){
+  const slp={id:'sl_'+Math.random().toString(36).slice(2),afterDraw(ch){
     const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
     c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
     sd.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});
@@ -733,14 +700,12 @@ function drawStab(){
   }};
   stabChartInst=new Chart(document.getElementById('stab-chart'),{
     type:'scatter',data:{datasets:[{data:[{x:minX,y:0}]}]},
-    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(minX-padX,maxX+padX,0,maxP*1.25)},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(minX-padX,maxX+padX,0,maxP*1.25)},
     plugins:[gp,ap,slp]
   });
 }
 
-// ─────────────────────────────────────────────
-// HISTOGRAMM
-// ─────────────────────────────────────────────
+// ── Histogramm ────────────────────────────────────────────
 let histChartInst=null;
 function drawHist(){
   const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
@@ -751,7 +716,7 @@ function drawHist(){
   if(bounds.some(isNaN))errs.push('⚠ Ungültige Klassengrenzen.');
   if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
   if(!bounds.some(isNaN)&&!freqs.some(isNaN)){
-    if(bounds.length!==freqs.length+1)errs.push('⚠ '+freqs.length+' Häufigkeiten brauchen '+(freqs.length+1)+' Grenzen.');
+    if(bounds.length!==freqs.length+1)errs.push('⚠ '+freqs.length+' Häufigkeiten → '+(freqs.length+1)+' Grenzen nötig.');
     if(freqs.some(v=>v<0))errs.push('⚠ Negative Häufigkeiten nicht erlaubt.');
     for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen müssen aufsteigend sein.');
   }
@@ -767,20 +732,18 @@ function drawHist(){
   const hd={bounds,densities};
   if(histChartInst)histChartInst.destroy();
   const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx');
-  const hbp={id:'hb',afterDraw(ch){
+  const hbp={id:'hb_'+Math.random().toString(36).slice(2),afterDraw(ch){
     const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
     c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();
   }};
   histChartInst=new Chart(document.getElementById('hist-chart'),{
     type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},
-    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},
     plugins:[gp,ap,hbp]
   });
 }
 
-// ─────────────────────────────────────────────
-// GRAPHENPLOTTER
-// ─────────────────────────────────────────────
+// ── Graphenplotter ────────────────────────────────────────
 let graphChartInst=null,graphFuncCount=1;
 const GCOLS=['#e94560','#1565c0','#2e7d32','#f9a825','#6a1b9a','#00838f'];
 const GLBLS=['f₁','f₂','f₃','f₄','f₅','f₆'];
@@ -822,14 +785,15 @@ function drawGraph(){
   const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');
   graphChartInst=new Chart(document.getElementById('graph-chart'),{
     type:'line',data:{datasets},
-    options:{responsive:true,animation:false,parsing:false,layout:{padding:{right:55,top:35,left:18,bottom:30}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:{right:55,top:35,left:18,bottom:30}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},
     plugins:[gp,ap]
   });
 }
 
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
 // BAUMDIAGRAMM
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+
 let treeMode='manual';
 function setTreeMode(m){
   treeMode=m;
@@ -839,7 +803,12 @@ function setTreeMode(m){
   });
   if(m==='manual')renderTree();else buildAutoTree();
 }
-let treeData=[{branches:[{label:'A',prob:'0.6'},{label:'B',prob:'0.4'}]},{branches:[{label:'X',prob:'0.7'},{label:'Y',prob:'0.3'}]}];
+
+// Manuell
+let treeData=[
+  {branches:[{label:'A',prob:'0.6'},{label:'B',prob:'0.4'}]},
+  {branches:[{label:'X',prob:'0.7'},{label:'Y',prob:'0.3'}]}
+];
 function manualAddLevel(){treeData.push({branches:[{label:'J',prob:'0.5'},{label:'N',prob:'0.5'}]});renderLevelEditor();renderTree();}
 function manualRemoveLevel(){if(treeData.length<=1)return;treeData.pop();renderLevelEditor();renderTree();}
 function renderLevelEditor(){
@@ -847,13 +816,24 @@ function renderLevelEditor(){
   treeData.forEach((lv,li)=>{
     const box=document.createElement('div');
     box.style.cssText='background:#0d1a2e;border:1px solid #253a5e;border-radius:10px;padding:12px;margin-bottom:10px';
-    let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="color:#e94560;font-weight:bold">Stufe '+(li+1)+'</span><button onclick="addBranch('+li+')" style="background:#253a5e;border:1px solid #4fc3f7;color:#4fc3f7;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">+ Zweig</button>'+(lv.branches.length>1?'<button onclick="removeBranch('+li+')" style="background:#253a5e;border:1px solid #ff8a65;color:#ff8a65;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">− Zweig</button>':'')+'</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
-    lv.branches.forEach((br,bi)=>{html+='<div style="display:flex;align-items:center;gap:5px;background:#16213e;border:1px solid #253a5e;border-radius:8px;padding:7px 10px"><span style="color:#aaa;font-size:.82rem">Z'+(bi+1)+':</span><input type="text" value="'+br.label+'" onchange="treeData['+li+'].branches['+bi+'].label=this.value;renderTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem"><span style="color:#aaa;font-size:.82rem">p=</span><input type="text" value="'+br.prob+'" onchange="treeData['+li+'].branches['+bi+'].prob=this.value;renderTree()" style="width:70px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem"></div>';});
+    let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="color:#e94560;font-weight:bold">Stufe '+(li+1)+'</span>'
+      +'<button onclick="addBranch('+li+')" style="background:#253a5e;border:1px solid #4fc3f7;color:#4fc3f7;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">+ Zweig</button>'
+      +(lv.branches.length>1?'<button onclick="removeBranch('+li+')" style="background:#253a5e;border:1px solid #ff8a65;color:#ff8a65;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">− Zweig</button>':'')
+      +'</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+    lv.branches.forEach((br,bi)=>{
+      html+='<div style="display:flex;align-items:center;gap:5px;background:#16213e;border:1px solid #253a5e;border-radius:8px;padding:7px 10px">'
+        +'<span style="color:#aaa;font-size:.82rem">Z'+(bi+1)+':</span>'
+        +'<input type="text" value="'+br.label+'" onchange="treeData['+li+'].branches['+bi+'].label=this.value;renderTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+        +'<span style="color:#aaa;font-size:.82rem">p=</span>'
+        +'<input type="text" value="'+br.prob+'" onchange="treeData['+li+'].branches['+bi+'].prob=this.value;renderTree()" style="width:70px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+        +'</div>';
+    });
     html+='</div>';box.innerHTML=html;w.appendChild(box);
   });
 }
 function addBranch(li){treeData[li].branches.push({label:'?',prob:'0'});renderLevelEditor();renderTree();}
 function removeBranch(li){if(treeData[li].branches.length<=1)return;treeData[li].branches.pop();renderLevelEditor();renderTree();}
+
 function renderTree(){
   const showProd=document.getElementById('tree-show-prod')?.checked??true;
   const showSum=document.getElementById('tree-show-sum')?.checked??true;
@@ -864,7 +844,9 @@ function renderTree(){
   const levels=treeData.map(lv=>lv.branches.map(b=>({label:b.label,prob:parseFloat(b.prob)||0,probStr:b.prob})));
   drawTreeSVG(levels,showProd,showSum);
 }
+
 function buildAutoTree(){if(treeMode==='binom')buildBinomTree();else if(treeMode==='urn')buildUrnTree();}
+
 function buildBinomTree(){
   const n=parseInt(document.getElementById('tb-n').value)||2;
   const p=parseFloat(document.getElementById('tb-p').value);
@@ -877,6 +859,7 @@ function buildBinomTree(){
   for(let i=0;i<n;i++)levels.push([{label:hit,prob:p,probStr:fmtP(p)},{label:miss,prob:q,probStr:fmtP(q)}]);
   drawTreeSVG(levels,showProd,showSum);
 }
+
 function buildUrnTree(){
   const R=parseInt(document.getElementById('tu-r').value);
   const B=parseInt(document.getElementById('tu-b').value);
@@ -886,91 +869,237 @@ function buildUrnTree(){
   const showSum=document.getElementById('tu-show-sum').checked;
   const errEl=document.getElementById('tu-error');errEl.innerHTML='';
   if(isNaN(R)||isNaN(B)||R<0||B<0||(R+B)<1){errEl.innerHTML='<div class="error-msg">⚠ Ungültige Urne.</div>';return;}
-  if(!replace&&k>R+B){errEl.innerHTML='<div class="error-msg">⚠ k ≤ Gesamtzahl der Kugeln.</div>';return;}
+  if(!replace&&k>R+B){errEl.innerHTML='<div class="error-msg">⚠ k ≤ Gesamtzahl.</div>';return;}
   if(replace){
     const tot=R+B,levels=[];
     for(let i=0;i<k;i++)levels.push([{label:'R',prob:R/tot,probStr:fmtFrac(R,tot)},{label:'B',prob:B/tot,probStr:fmtFrac(B,tot)}]);
     drawTreeSVG(levels,showProd,showSum);
-  }else{drawUrnOhneZurueck({r:R,b:B},k,showProd,showSum);}
+  }else{
+    drawUrnOhneZurueck({r:R,b:B},k,showProd,showSum);
+  }
 }
+
 function fmtP(p){return String(parseFloat(p.toPrecision(6)));}
 function fmtFrac(a,b){return a+'/'+b;}
+function fmtFrac2(p){
+  if(!isFinite(p))return'?';
+  for(let d=1;d<=10000;d++){const n=Math.round(p*d);if(Math.abs(n/d-p)<1e-9)return n===d?'1':(n===0?'0':n+'/'+d);}
+  return parseFloat(p.toPrecision(5)).toString();
+}
+
 function drawUrnOhneZurueck(root,k,showProd,showSum){
   let nid=0;const nodes=[];
-  const r={id:nid++,parentId:null,label:'Start',probStr:'1',prob:1,depth:0,r:root.r,b:root.b,pathProb:1};
+  const r={id:nid++,parentId:null,label:'Start',probStr:'1',prob:1,depth:0,r:root.r,b:root.b,pathProb:1,pathLabels:[]};
   nodes.push(r);
   function ex(par){
     if(par.depth>=k)return;const tot=par.r+par.b;
-    if(par.r>0){const p=par.r/tot;const c={id:nid++,parentId:par.id,label:'R',probStr:fmtFrac(par.r,tot),prob:p,depth:par.depth+1,r:par.r-1,b:par.b,pathProb:par.pathProb*p};nodes.push(c);ex(c);}
-    if(par.b>0){const p=par.b/tot;const c={id:nid++,parentId:par.id,label:'B',probStr:fmtFrac(par.b,tot),prob:p,depth:par.depth+1,r:par.r,b:par.b-1,pathProb:par.pathProb*p};nodes.push(c);ex(c);}
+    if(par.r>0){const p=par.r/tot;const c={id:nid++,parentId:par.id,label:'R',probStr:fmtFrac(par.r,tot),prob:p,depth:par.depth+1,r:par.r-1,b:par.b,pathProb:par.pathProb*p,pathLabels:[...par.pathLabels,'R']};nodes.push(c);ex(c);}
+    if(par.b>0){const p=par.b/tot;const c={id:nid++,parentId:par.id,label:'B',probStr:fmtFrac(par.b,tot),prob:p,depth:par.depth+1,r:par.r,b:par.b-1,pathProb:par.pathProb*p,pathLabels:[...par.pathLabels,'B']};nodes.push(c);ex(c);}
   }
   ex(r);drawTreeSVGNodes(nodes,k,showProd,showSum);
 }
+
+// ── SVG Baum (regulär) ────────────────────────────────────
 function drawTreeSVG(levels,showProd,showSum){
-  const depth=levels.length;let leafCount=1;for(const l of levels)leafCount*=l.length;
-  function buildPaths(lv,pre,pp){if(lv===depth)return[[pre,pp]];const res=[];for(const br of levels[lv]){const np=[...pre,{label:br.label,probStr:br.probStr,prob:br.prob}];for(const p of buildPaths(lv+1,np,pp*br.prob))res.push(p);}return res;}
-  const allPaths=buildPaths(0,[],1);
+  const depth=levels.length;
+  let leafCount=1;for(const l of levels)leafCount*=l.length;
+
+  // Alle Pfade aufbauen (mit Pfad-Label für Omega)
+  function buildPaths(lv,pre,pp,lbls){
+    if(lv===depth)return[[pre,pp,lbls]];
+    const res=[];
+    for(const br of levels[lv]){
+      const np=[...pre,{label:br.label,probStr:br.probStr,prob:br.prob}];
+      const nl=[...lbls,br.label];
+      for(const p of buildPaths(lv+1,np,pp*br.prob,nl))res.push(p);
+    }
+    return res;
+  }
+  const allPaths=buildPaths(0,[],1,[]);
+
   const nm=new Map(),el=[];
-  const RH=56,CW=165,PX=65,PY=45;
-  const H=Math.max(320,leafCount*RH+PY*2),W=(depth+1)*CW+PX*2+(showProd?220:30);
-  const lYs=[];for(let i=0;i<leafCount;i++)lYs.push(PY+i*(H-PY*2)/(leafCount-1||1));
+  // Layout-Konstanten
+  const RH=52,CW=150,PX=55,PY=40;
+  // Breite: Baum + Omega-Spalte (Überschrift + Werte) + P(omega)-Spalte
+  const OMEGA_COL_W=100, PROB_COL_W=120;
+  const H=Math.max(280,leafCount*RH+PY*2);
+  const W=PX+(depth+1)*CW+OMEGA_COL_W+PROB_COL_W+20;
+
+  const lYs=[];
+  for(let i=0;i<leafCount;i++)lYs.push(PY+i*(H-PY*2)/(leafCount-1||1));
+
   function gY(pre){
     const key=JSON.stringify(pre);if(nm.has(key))return nm.get(key).y;
-    let ml=[];allPaths.forEach(([p],idx)=>{let m=true;for(let i=0;i<pre.length;i++)if(p[i].label!==pre[i].label||p[i].probStr!==pre[i].probStr){m=false;break;}if(m)ml.push(idx);});
+    let ml=[];
+    allPaths.forEach(([p],idx)=>{
+      let m=true;
+      for(let i=0;i<pre.length;i++)if(p[i].label!==pre[i].label||p[i].probStr!==pre[i].probStr){m=false;break;}
+      if(m)ml.push(idx);
+    });
     return ml.reduce((a,i)=>a+lYs[i],0)/ml.length;
   }
+
   nm.set('[]',{x:PX,y:H/2,isRoot:true});
-  allPaths.forEach(([path],li)=>{
+  allPaths.forEach(([path])=>{
     for(let d=0;d<path.length;d++){
       const pre=path.slice(0,d+1),key=JSON.stringify(pre);
       if(!nm.has(key))nm.set(key,{x:PX+(d+1)*CW,y:gY(pre),label:path[d].label});
       const fk=JSON.stringify(path.slice(0,d)),ek=fk+'->'+key;
-      if(!el.find(e=>e.key===ek))el.push({key:ek,fromKey:fk,toKey:key,label:path[d].label,probStr:path[d].probStr,prob:path[d].prob});
+      if(!el.find(e=>e.key===ek))el.push({key:ek,fromKey:fk,toKey:key,label:path[d].label,probStr:path[d].probStr});
     }
   });
+
+  // X-Position der letzten Knoten-Spalte
+  const lastNodeX=PX+depth*CW;
+  // Omega-Spalte startet nach letzten Knoten
+  const omegaX=lastNodeX+40;
+  const probX=omegaX+OMEGA_COL_W;
+
   let svg='<svg width="'+W+'" height="'+H+'" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">';
-  el.forEach(e=>{const f=nm.get(e.fromKey),t=nm.get(e.toKey);if(!f||!t)return;const mx=(f.x+t.x)/2;svg+='<path d="M'+f.x+','+f.y+' C'+mx+','+f.y+' '+mx+','+t.y+' '+t.x+','+t.y+'" fill="none" stroke="#1565c0" stroke-width="2"/>';const lx=f.x*.35+t.x*.65,ly=f.y*.35+t.y*.65;svg+='<text x="'+lx+'" y="'+(ly-11)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="#c0392b">'+escHtml(e.label)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+5)+'" text-anchor="middle" font-size="13" fill="#1a237e">'+escHtml(e.probStr)+'</text>';});
-  nm.forEach(n=>{if(n.isRoot){svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="9" fill="#e94560" stroke="#fff" stroke-width="2"/>';}else{svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="6" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';svg+='<text x="'+(n.x+11)+'" y="'+(n.y+5)+'" font-size="15" font-weight="bold" fill="#111">'+escHtml(n.label)+'</text>';}});
+
+  // Kanten – GERADE LINIEN
+  el.forEach(e=>{
+    const f=nm.get(e.fromKey),t=nm.get(e.toKey);if(!f||!t)return;
+    // Gerade Linie
+    svg+='<line x1="'+f.x+'" y1="'+f.y+'" x2="'+t.x+'" y2="'+t.y+'" stroke="#1565c0" stroke-width="2"/>';
+    // Beschriftung: Mitte der Linie
+    const lx=(f.x+t.x)/2,ly=(f.y+t.y)/2;
+    // Offset senkrecht zur Linie
+    const dx=t.x-f.x,dy=t.y-f.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ox=-dy/len*14,oy=dx/len*14; // senkrecht versetzt
+    svg+='<text x="'+(lx+ox)+'" y="'+(ly+oy)+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="bold" fill="#c0392b">'+escHtml(e.label)+'</text>';
+    svg+='<text x="'+(lx+ox*1.8)+'" y="'+(ly+oy*1.8+13)+'" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#1a237e">'+escHtml(e.probStr)+'</text>';
+  });
+
+  // Knoten
+  nm.forEach(n=>{
+    if(n.isRoot){svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="8" fill="#e94560" stroke="#fff" stroke-width="2"/>';}
+    else{svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="5" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';}
+  });
+
+  // Spalten-Überschriften (nur wenn showProd)
+  if(showProd){
+    svg+='<text x="'+(omegaX+OMEGA_COL_W/2)+'" y="'+(PY-18)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">ω</text>';
+    svg+='<text x="'+(probX+PROB_COL_W/2)+'" y="'+(PY-18)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#2e7d32">P({ω})</text>';
+  }
+
+  // Pfade + Omega + Wahrscheinlichkeit
   let tot=0;
-  if(showProd){allPaths.forEach(([path,prob],idx)=>{const lx=PX+depth*CW+30,ly=lYs[idx];const ps=path.map(s=>s.probStr).join(' · ');svg+='<text x="'+lx+'" y="'+(ly-7)+'" font-size="11" fill="#555">'+escHtml(ps)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+9)+'" font-size="13" font-weight="bold" fill="#2e7d32">= '+fmtFrac2(prob)+'</text>';tot+=prob;});}
-  if(showSum)document.getElementById('tree-path-sum').textContent='Σ = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
+  allPaths.forEach(([path,prob,lbls],idx)=>{
+    const ly=lYs[idx];
+    tot+=prob;
+
+    if(showProd){
+      // Omega: z.B. "RBR"
+      const omegaLabel=lbls.join('');
+      // Horizontale Linie vom letzten Knoten zur Omega-Spalte
+      const lastNode=nm.get(JSON.stringify(path));
+      if(lastNode){
+        svg+='<line x1="'+lastNode.x+'" y1="'+lastNode.y+'" x2="'+(omegaX-6)+'" y2="'+ly+'" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>';
+      }
+      // Omega-Wert
+      svg+='<text x="'+(omegaX+OMEGA_COL_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-style="italic" fill="#333">'+escHtml(omegaLabel)+'</text>';
+      // Wahrscheinlichkeit
+      svg+='<text x="'+(probX+PROB_COL_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="bold" fill="#2e7d32">'+fmtFrac2(prob)+'</text>';
+    }
+  });
+
+  // Vertikale Trennlinien für Spalten
+  if(showProd){
+    svg+='<line x1="'+(omegaX-8)+'" y1="'+(PY-28)+'" x2="'+(omegaX-8)+'" y2="'+(H-10)+'" stroke="#ccc" stroke-width="1"/>';
+    svg+='<line x1="'+(probX-6)+'" y1="'+(PY-28)+'" x2="'+(probX-6)+'" y2="'+(H-10)+'" stroke="#ccc" stroke-width="1"/>';
+  }
+
+  if(showSum)document.getElementById('tree-path-sum').textContent='Σ P({ω}) = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
   else document.getElementById('tree-path-sum').textContent='';
+
   svg+='</svg>';
   document.getElementById('tree-svg-wrap').innerHTML=svg;
   document.getElementById('tree-svg-wrap').querySelector('svg').setAttribute('id','tree-svg');
 }
+
+// ── SVG Baum (Knoten-basiert, Urne ohne Zurücklegen) ──────
 function drawTreeSVGNodes(nodes,depth,showProd,showSum){
   const leaves=nodes.filter(n=>n.depth===depth),lc=leaves.length;if(!lc)return;
-  const RH=56,CW=165,PX=65,PY=45,H=Math.max(320,lc*RH+PY*2),W=(depth+1)*CW+PX*2+230;
+  const RH=52,CW=150,PX=55,PY=40;
+  const OMEGA_COL_W=100,PROB_COL_W=120;
+  const H=Math.max(280,lc*RH+PY*2),W=PX+(depth+1)*CW+OMEGA_COL_W+PROB_COL_W+20;
   const lYs={};leaves.forEach((n,i)=>lYs[n.id]=PY+i*(H-PY*2)/(lc-1||1));
   function gDY(id){const d=lYs[id];if(d!==undefined)return[d];return nodes.filter(n=>n.parentId===id).flatMap(c=>gDY(c.id));}
   const nY={};nodes.forEach(n=>{const ys=gDY(n.id);nY[n.id]=ys.reduce((a,b)=>a+b,0)/ys.length;});
   const nX=n=>PX+n.depth*CW;
+  const lastNodeX=PX+depth*CW;
+  const omegaX=lastNodeX+40;
+  const probX=omegaX+OMEGA_COL_W;
+
   let svg='<svg width="'+W+'" height="'+H+'" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">';
-  nodes.forEach(n=>{if(n.parentId===null)return;const par=nodes.find(p=>p.id===n.parentId);const fx=nX(par),fy=nY[par.id],tx=nX(n),ty=nY[n.id],mx=(fx+tx)/2;svg+='<path d="M'+fx+','+fy+' C'+mx+','+fy+' '+mx+','+ty+' '+tx+','+ty+'" fill="none" stroke="#1565c0" stroke-width="2"/>';const lx=fx*.35+tx*.65,ly=fy*.35+ty*.65;svg+='<text x="'+lx+'" y="'+(ly-11)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="#c0392b">'+escHtml(n.label)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+5)+'" text-anchor="middle" font-size="13" fill="#1a237e">'+escHtml(n.probStr)+'</text>';});
-  nodes.forEach(n=>{const x=nX(n),y=nY[n.id];if(n.depth===0){svg+='<circle cx="'+x+'" cy="'+y+'" r="9" fill="#e94560" stroke="#fff" stroke-width="2"/>';}else{svg+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';svg+='<text x="'+(x+11)+'" y="'+(y+5)+'" font-size="15" font-weight="bold" fill="#111">'+escHtml(n.label)+'</text>';}});
+
+  // Kanten – GERADE LINIEN
+  nodes.forEach(n=>{
+    if(n.parentId===null)return;
+    const par=nodes.find(p=>p.id===n.parentId);
+    const fx=nX(par),fy=nY[par.id],tx=nX(n),ty=nY[n.id];
+    svg+='<line x1="'+fx+'" y1="'+fy+'" x2="'+tx+'" y2="'+ty+'" stroke="#1565c0" stroke-width="2"/>';
+    const lx=(fx+tx)/2,ly=(fy+ty)/2;
+    const dx=tx-fx,dy=ty-fy,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ox=-dy/len*14,oy=dx/len*14;
+    svg+='<text x="'+(lx+ox)+'" y="'+(ly+oy)+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="bold" fill="#c0392b">'+escHtml(n.label)+'</text>';
+    svg+='<text x="'+(lx+ox*1.8)+'" y="'+(ly+oy*1.8+13)+'" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#1a237e">'+escHtml(n.probStr)+'</text>';
+  });
+
+  // Knoten
+  nodes.forEach(n=>{
+    const x=nX(n),y=nY[n.id];
+    if(n.depth===0){svg+='<circle cx="'+x+'" cy="'+y+'" r="8" fill="#e94560" stroke="#fff" stroke-width="2"/>';}
+    else{svg+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';}
+  });
+
+  // Spalten-Überschriften
+  if(showProd){
+    svg+='<text x="'+(omegaX+OMEGA_COL_W/2)+'" y="'+(PY-18)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">ω</text>';
+    svg+='<text x="'+(probX+PROB_COL_W/2)+'" y="'+(PY-18)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#2e7d32">P({ω})</text>';
+  }
+
   let tot=0;
-  if(showProd){leaves.forEach(leaf=>{const lx=nX(leaf)+28,ly=lYs[leaf.id];const pp=[];let cur=leaf;while(cur.parentId!==null){pp.unshift(cur.probStr);cur=nodes.find(n=>n.id===cur.parentId);}svg+='<text x="'+lx+'" y="'+(ly-7)+'" font-size="11" fill="#555">'+escHtml(pp.join(' · '))+'</text>';svg+='<text x="'+lx+'" y="'+(ly+9)+'" font-size="13" font-weight="bold" fill="#2e7d32">= '+fmtFrac2(leaf.pathProb)+'</text>';tot+=leaf.pathProb;});}
-  if(showSum)document.getElementById('tree-path-sum').textContent='Σ = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
+  if(showProd){
+    leaves.forEach(leaf=>{
+      const ly=lYs[leaf.id];
+      const omegaLabel=leaf.pathLabels.join('');
+      // Gestrichelte Linie zum Omega
+      svg+='<line x1="'+nX(leaf)+'" y1="'+nY[leaf.id]+'" x2="'+(omegaX-6)+'" y2="'+ly+'" stroke="#bbb" stroke-width="1" stroke-dasharray="4,3"/>';
+      svg+='<text x="'+(omegaX+OMEGA_COL_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-style="italic" fill="#333">'+escHtml(omegaLabel)+'</text>';
+      svg+='<text x="'+(probX+PROB_COL_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="bold" fill="#2e7d32">'+fmtFrac2(leaf.pathProb)+'</text>';
+      tot+=leaf.pathProb;
+    });
+    // Trennlinien
+    svg+='<line x1="'+(omegaX-8)+'" y1="'+(PY-28)+'" x2="'+(omegaX-8)+'" y2="'+(H-10)+'" stroke="#ccc" stroke-width="1"/>';
+    svg+='<line x1="'+(probX-6)+'" y1="'+(PY-28)+'" x2="'+(probX-6)+'" y2="'+(H-10)+'" stroke="#ccc" stroke-width="1"/>';
+  }
+
+  if(showSum)document.getElementById('tree-path-sum').textContent='Σ P({ω}) = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
   else document.getElementById('tree-path-sum').textContent='';
+
   svg+='</svg>';
   document.getElementById('tree-svg-wrap').innerHTML=svg;
   document.getElementById('tree-svg-wrap').querySelector('svg').setAttribute('id','tree-svg');
 }
-function fmtFrac2(p){if(!isFinite(p))return'?';for(let d=1;d<=10000;d++){const n=Math.round(p*d);if(Math.abs(n/d-p)<1e-9)return n===d?'1':(n===0?'0':n+'/'+d);}return parseFloat(p.toPrecision(5)).toString();}
-function exportTreeSVG(){const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));a.download='baumdiagramm.svg';a.click();}
+
+// ── Tree Export ───────────────────────────────────────────
+function exportTreeSVG(){
+  const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));a.download='baumdiagramm.svg';a.click();
+}
 function exportTreePNG(){
   const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}
   const w=parseInt(svg.getAttribute('width'))||800,h=parseInt(svg.getAttribute('height'))||600;
   const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;
   const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.scale(2,2);
-  const img=new Image();img.onload=()=>{c.drawImage(img,0,0);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';a.click();};
+  const img=new Image();
+  img.onload=()=>{c.drawImage(img,0,0);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';a.click();};
   img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg.outerHTML)));
 }
 
-// ─────────────────────────────────────────────
-// INIT  (ein einziger DOMContentLoaded)
-// ─────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   buildMiniKbd('wt-kbd',()=>document.getElementById('wt-func'));
   buildMiniKbd('graph-kbd',()=>lastGraphInput||document.getElementById('graph-expr-0'));
