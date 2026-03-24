@@ -26,7 +26,7 @@ h1{text-align:center;color:#e94560;margin-bottom:18px;font-size:1.7rem;letter-sp
 .btn.op{color:#e94560;border-color:#e94560}.btn.fn{color:#4fc3f7;border-color:#4fc3f7}
 .btn.eq{background:#e94560;color:#fff;border-color:#e94560;font-size:1.1rem}.btn.eq:hover{background:#c0392b}
 .btn.clr{color:#ff8a65;border-color:#ff8a65}.btn.zero{grid-column:span 2}
-.panel{background:#16213e;border-radius:14px;padding:22px;max-width:860px;margin:0 auto;border:1px solid #253a5e}
+.panel{background:#16213e;border-radius:14px;padding:22px;max-width:900px;margin:0 auto;border:1px solid #253a5e}
 .panel h2{color:#e94560;margin-bottom:14px;font-size:1.2rem}
 .form-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
 label{font-size:.9rem;color:#aaa}
@@ -62,6 +62,7 @@ tr:hover td{background:#1a2a4a}
 .tree-mode-btn{border:2px solid;padding:7px 18px;border-radius:14px;cursor:pointer;font-size:.9rem;background:transparent;transition:all .2s}
 .tree-mode-btn.tm-manual{border-color:#f9a825;color:#f9a825}.tree-mode-btn.tm-binom{border-color:#4fc3f7;color:#4fc3f7}.tree-mode-btn.tm-urn{border-color:#a8e063;color:#a8e063}
 .tree-mode-btn.active.tm-manual{background:#f9a825;color:#000}.tree-mode-btn.active.tm-binom{background:#4fc3f7;color:#000}.tree-mode-btn.active.tm-urn{background:#a8e063;color:#000}
+.urn-color-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -304,7 +305,6 @@ tr:hover td{background:#1a2a4a}
       <label>Stufen n=</label><input type="number" id="tb-n" value="3" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
       <label>p=</label><input type="number" id="tb-p" value="0.4" min="0" max="1" step="0.01" style="width:80px" oninput="buildAutoTree()">
       <label>Treffer:</label><input type="text" id="tb-hit" value="T" style="width:55px" oninput="buildAutoTree()">
-      <label>Niete:</label><input type="text" id="tb-miss" value="T" style="width:55px" oninput="buildAutoTree()">
     </div>
     <div class="form-row">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -320,9 +320,12 @@ tr:hover td{background:#1a2a4a}
 
   <!-- URNE -->
   <div id="tree-panel-urn" style="display:none">
+    <div id="urn-colors-wrap" style="margin-bottom:8px"></div>
     <div class="form-row">
-      <label>Rote R=</label><input type="number" id="tu-r" value="3" min="0" style="width:65px" oninput="buildAutoTree()">
-      <label>Blaue B=</label><input type="number" id="tu-b" value="2" min="0" style="width:65px" oninput="buildAutoTree()">
+      <button class="action-btn" onclick="addUrnColor()" style="background:#4fc3f7;padding:6px 14px">+ Farbe</button>
+      <button class="action-btn" onclick="removeUrnColor()" style="background:#555;padding:6px 14px">− Farbe</button>
+    </div>
+    <div class="form-row">
       <label>Züge k=</label><input type="number" id="tu-k" value="2" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:6px">
         <input type="checkbox" id="tu-replace" onchange="buildAutoTree()">
@@ -379,37 +382,15 @@ function safeEval(expr){
 function safeEvalX(e,x){return safeEval(e.replace(/\bx\b/g,'('+x+')'));}
 function roundDisp(v){return isFinite(v)?String(parseFloat(v.toPrecision(12))):'Fehler';}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtTick(v){
-  if(Math.abs(v)<1e-10)return'0';
-  if(Math.abs(v)>=10000||Math.abs(v)<0.001)return v.toExponential(1);
-  return String(parseFloat(v.toPrecision(5)));
-}
+function fmtTick(v){if(Math.abs(v)<1e-10)return'0';if(Math.abs(v)>=10000||Math.abs(v)<0.001)return v.toExponential(1);return String(parseFloat(v.toPrecision(5)));}
 
-// ── Mini-Tastatur ─────────────────────────────────────────
-const MKB=[
-  {l:'sin()',i:'sin('},{l:'cos()',i:'cos('},{l:'tan()',i:'tan('},
-  {l:'ln()',i:'ln('},{l:'log()',i:'log('},{l:'√()',i:'sqrt('},
-  {l:'eˣ',i:'exp('},{l:'xʸ',i:'^'},{l:'|x|',i:'abs('},
-  {l:'π',i:'pi'},{l:'e',i:'e'},{l:'(',i:'('},{l:')',i:')'},
-  {l:'1/x',i:'1/('},
-  {l:'+',i:'+',c:'op-k'},{l:'−',i:'-',c:'op-k'},
-  {l:'×',i:'*',c:'op-k'},{l:'÷',i:'/',c:'op-k'},
-  {l:'⌫',i:'__back__',c:'op-k'}
-];
+// Mini-Tastatur
+const MKB=[{l:'sin()',i:'sin('},{l:'cos()',i:'cos('},{l:'tan()',i:'tan('},{l:'ln()',i:'ln('},{l:'log()',i:'log('},{l:'√()',i:'sqrt('},{l:'eˣ',i:'exp('},{l:'xʸ',i:'^'},{l:'|x|',i:'abs('},{l:'π',i:'pi'},{l:'e',i:'e'},{l:'(',i:'('},{l:')',i:')'},{l:'1/x',i:'1/('},{l:'+',i:'+',c:'op-k'},{l:'−',i:'-',c:'op-k'},{l:'×',i:'*',c:'op-k'},{l:'÷',i:'/',c:'op-k'},{l:'⌫',i:'__back__',c:'op-k'}];
 function buildMiniKbd(cid,getInp){
   const w=document.getElementById(cid);if(!w)return;w.innerHTML='';
   MKB.forEach(b=>{
-    const btn=document.createElement('button');
-    btn.className='mk'+(b.c?' '+b.c:'');btn.textContent=b.l;btn.type='button';
-    btn.addEventListener('mousedown',ev=>{
-      ev.preventDefault();const inp=getInp();if(!inp)return;
-      inp.focus();const s=inp.selectionStart,en=inp.selectionEnd;
-      if(b.i==='__back__'){
-        if(s===en&&s>0){inp.value=inp.value.slice(0,s-1)+inp.value.slice(en);inp.setSelectionRange(s-1,s-1);}
-        else{inp.value=inp.value.slice(0,s)+inp.value.slice(en);inp.setSelectionRange(s,s);}
-      }else{inp.value=inp.value.slice(0,s)+b.i+inp.value.slice(en);inp.setSelectionRange(s+b.i.length,s+b.i.length);}
-      inp.dispatchEvent(new Event('input'));
-    });
+    const btn=document.createElement('button');btn.className='mk'+(b.c?' '+b.c:'');btn.textContent=b.l;btn.type='button';
+    btn.addEventListener('mousedown',ev=>{ev.preventDefault();const inp=getInp();if(!inp)return;inp.focus();const s=inp.selectionStart,en=inp.selectionEnd;if(b.i==='__back__'){if(s===en&&s>0){inp.value=inp.value.slice(0,s-1)+inp.value.slice(en);inp.setSelectionRange(s-1,s-1);}else{inp.value=inp.value.slice(0,s)+inp.value.slice(en);inp.setSelectionRange(s,s);}}else{inp.value=inp.value.slice(0,s)+b.i+inp.value.slice(en);inp.setSelectionRange(s+b.i.length,s+b.i.length);}inp.dispatchEvent(new Event('input'));});
     w.appendChild(btn);
   });
 }
@@ -419,127 +400,20 @@ document.addEventListener('focusin',e=>{if(e.target.classList.contains('graph-ex
 // ══════════════════════════════════════════════════════════
 // CHART PLUGINS
 // ══════════════════════════════════════════════════════════
-function makeGridPlugin(){
-  return{id:'gp_'+Math.random().toString(36).slice(2),
-    beforeDraw(chart){
-      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
-      if(!scales.x||!scales.y)return;
-      ctx.save();ctx.fillStyle='#fff';ctx.fillRect(left,top,right-left,bottom-top);
-      const x0=Math.max(left,Math.min(right,scales.x.getPixelForValue(0)));
-      const y0=Math.max(top,Math.min(bottom,scales.y.getPixelForValue(0)));
-      function ns(range,target,px){const r=px/range,raw=target/r,mag=Math.pow(10,Math.floor(Math.log10(raw)));for(const c of[1,2,2.5,5,10])if(c*mag>=raw)return c*mag;return mag;}
-      const xs=ns(scales.x.max-scales.x.min,22,right-left);
-      const ys=ns(scales.y.max-scales.y.min,22,bottom-top);
-      function lX(col,lw,step){ctx.strokeStyle=col;ctx.lineWidth=lw;const o=scales.x.getValueForPixel(x0);for(let v=0;;v+=step){const p=scales.x.getPixelForValue(o+v);if(p>right+1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}for(let v=step;;v+=step){const p=scales.x.getPixelForValue(o-v);if(p<left-1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}}
-      function lY(col,lw,step){ctx.strokeStyle=col;ctx.lineWidth=lw;const o=scales.y.getValueForPixel(y0);for(let v=0;;v+=step){const p=scales.y.getPixelForValue(o+v);if(p<top-1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}for(let v=step;;v+=step){const p=scales.y.getPixelForValue(o-v);if(p>bottom+1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}}
-      lX('#cce0ff',.5,xs);lY('#cce0ff',.5,ys);lX('#99c2ff',1,xs*5);lY('#99c2ff',1,ys*5);
-      ctx.restore();
-    }
-  };
-}
-function getAxisTicks(scale){
-  const range=scale.max-scale.min;const mag=Math.pow(10,Math.floor(Math.log10(range/5)));let step=mag;
-  for(const c of[1,2,2.5,5,10]){if(c*mag*4>=range){step=c*mag;break;}}
-  const ticks=[];const start=Math.ceil(scale.min/step)*step;
-  for(let v=start;v<=scale.max+1e-10;v+=step)ticks.push(Math.round(v*1e10)/1e10);
-  return ticks;
-}
-function makeArrowPlugin(xLbl,yLbl){
-  return{id:'ap_'+Math.random().toString(36).slice(2),
-    afterDraw(chart){
-      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
-      if(!scales.x||!scales.y)return;ctx.save();
-      const rx0=scales.x.getPixelForValue(0),ry0=scales.y.getPixelForValue(0);
-      const xY=Math.max(top,Math.min(bottom,ry0)),yX=Math.max(left,Math.min(right,rx0));
-      const aL=14,aW=7;
-      ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(left,xY);ctx.lineTo(right+aL,xY);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(right+aL,xY);ctx.lineTo(right,xY-aW);ctx.lineTo(right,xY+aW);ctx.closePath();ctx.fill();
-      ctx.beginPath();ctx.moveTo(yX,bottom);ctx.lineTo(yX,top-aL);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(yX,top-aL);ctx.lineTo(yX-aW,top-aL+aL);ctx.lineTo(yX+aW,top-aL+aL);ctx.closePath();ctx.fill();
-      ctx.font='bold 14px Segoe UI';ctx.fillStyle='#111';
-      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+2,xY-aW);
-      ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);
-      const MARGIN=32,BC=20;
-      ctx.font='13px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;
-      ctx.textAlign='center';ctx.textBaseline='top';
-      getAxisTicks(scales.x).forEach(v=>{
-        const px=scales.x.getPixelForValue(v);
-        if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)return;
-        ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();
-        if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)return;
-        ctx.fillText(fmtTick(v),px,Math.min(xY+8,bottom-BC));
-      });
-      ctx.textAlign='right';ctx.textBaseline='middle';
-      getAxisTicks(scales.y).forEach(v=>{
-        const py=scales.y.getPixelForValue(v);
-        if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)return;
-        ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();
-        if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)return;
-        ctx.fillText(fmtTick(v),yX-8,py);
-      });
-      ctx.restore();
-    }
-  };
-}
-function makeScales(xMin,xMax,yMin,yMax){
-  return{
-    x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false}},
-    y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false}}
-  };
-}
+function makeGridPlugin(){return{id:'gp_'+Math.random().toString(36).slice(2),beforeDraw(chart){const{ctx,chartArea:{left,top,right,bottom},scales}=chart;if(!scales.x||!scales.y)return;ctx.save();ctx.fillStyle='#fff';ctx.fillRect(left,top,right-left,bottom-top);const x0=Math.max(left,Math.min(right,scales.x.getPixelForValue(0)));const y0=Math.max(top,Math.min(bottom,scales.y.getPixelForValue(0)));function ns(range,target,px){const r=px/range,raw=target/r,mag=Math.pow(10,Math.floor(Math.log10(raw)));for(const c of[1,2,2.5,5,10])if(c*mag>=raw)return c*mag;return mag;}const xs=ns(scales.x.max-scales.x.min,22,right-left);const ys=ns(scales.y.max-scales.y.min,22,bottom-top);function lX(col,lw,step){ctx.strokeStyle=col;ctx.lineWidth=lw;const o=scales.x.getValueForPixel(x0);for(let v=0;;v+=step){const p=scales.x.getPixelForValue(o+v);if(p>right+1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}for(let v=step;;v+=step){const p=scales.x.getPixelForValue(o-v);if(p<left-1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}}function lY(col,lw,step){ctx.strokeStyle=col;ctx.lineWidth=lw;const o=scales.y.getValueForPixel(y0);for(let v=0;;v+=step){const p=scales.y.getPixelForValue(o+v);if(p<top-1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}for(let v=step;;v+=step){const p=scales.y.getPixelForValue(o-v);if(p>bottom+1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}}lX('#cce0ff',.5,xs);lY('#cce0ff',.5,ys);lX('#99c2ff',1,xs*5);lY('#99c2ff',1,ys*5);ctx.restore();}};}
+function getAxisTicks(scale){const range=scale.max-scale.min;const mag=Math.pow(10,Math.floor(Math.log10(range/5)));let step=mag;for(const c of[1,2,2.5,5,10]){if(c*mag*4>=range){step=c*mag;break;}}const ticks=[];const start=Math.ceil(scale.min/step)*step;for(let v=start;v<=scale.max+1e-10;v+=step)ticks.push(Math.round(v*1e10)/1e10);return ticks;}
+function makeArrowPlugin(xLbl,yLbl){return{id:'ap_'+Math.random().toString(36).slice(2),afterDraw(chart){const{ctx,chartArea:{left,top,right,bottom},scales}=chart;if(!scales.x||!scales.y)return;ctx.save();const rx0=scales.x.getPixelForValue(0),ry0=scales.y.getPixelForValue(0);const xY=Math.max(top,Math.min(bottom,ry0)),yX=Math.max(left,Math.min(right,rx0));const aL=14,aW=7;ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,xY);ctx.lineTo(right+aL,xY);ctx.stroke();ctx.beginPath();ctx.moveTo(right+aL,xY);ctx.lineTo(right,xY-aW);ctx.lineTo(right,xY+aW);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(yX,bottom);ctx.lineTo(yX,top-aL);ctx.stroke();ctx.beginPath();ctx.moveTo(yX,top-aL);ctx.lineTo(yX-aW,top-aL+aL);ctx.lineTo(yX+aW,top-aL+aL);ctx.closePath();ctx.fill();ctx.font='bold 14px Segoe UI';ctx.fillStyle='#111';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+2,xY-aW);ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);const MARGIN=32,BC=20;ctx.font='13px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;ctx.textAlign='center';ctx.textBaseline='top';getAxisTicks(scales.x).forEach(v=>{const px=scales.x.getPixelForValue(v);if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)return;ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)return;ctx.fillText(fmtTick(v),px,Math.min(xY+8,bottom-BC));});ctx.textAlign='right';ctx.textBaseline='middle';getAxisTicks(scales.y).forEach(v=>{const py=scales.y.getPixelForValue(v);if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)return;ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)return;ctx.fillText(fmtTick(v),yX-8,py);});ctx.restore();}};}
+function makeScales(xMin,xMax,yMin,yMax){return{x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false}},y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false}}};}
 const CPAD={right:48,top:34,left:18,bottom:30};
 
 // ══════════════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════════════
-function exportChartPNG(cid,fname){
-  const cv=document.getElementById(cid);if(!cv){alert('Kein Diagramm.');return;}
-  const out=document.createElement('canvas');out.width=cv.width;out.height=cv.height;
-  const c=out.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,out.width,out.height);c.drawImage(cv,0,0);
-  const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download=(fname||'diagramm')+'.png';a.click();
-}
-function exportTableCSV(){
-  const expr=document.getElementById('wt-func').value.trim();
-  const from=parseFloat(document.getElementById('wt-from').value);
-  const to=parseFloat(document.getElementById('wt-to').value);
-  const step=parseFloat(document.getElementById('wt-step').value);
-  if(!expr||isNaN(from)||isNaN(to)||isNaN(step)||step<=0||from>to)return;
-  let csv='x;f(x)\n';
-  for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}csv+=x+';'+fx+'\n';}
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wertetabelle.csv';a.click();
-}
-function exportTablePNG(){
-  const res=document.getElementById('wt-result');if(!res||!res.innerHTML){alert('Keine Tabelle.');return;}
-  const rows=[...res.querySelectorAll('tr')];if(!rows.length)return;
-  const cols=rows[0].querySelectorAll('th,td').length;
-  const CW=140,RH=28,PAD=16,W=cols*CW+PAD*2,H=rows.length*RH+PAD*2;
-  const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;
-  const c=cv.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,W,H);
-  rows.forEach((row,ri)=>{[...row.querySelectorAll('th,td')].forEach((cell,ci)=>{
-    const x=PAD+ci*CW,y=PAD+ri*RH;
-    c.fillStyle=ri===0?'#e94560':ri%2===0?'#f5f5f5':'#fff';c.fillRect(x,y,CW,RH);
-    c.strokeStyle='#ddd';c.lineWidth=.5;c.strokeRect(x,y,CW,RH);
-    c.fillStyle=ri===0?'#fff':'#222';c.font=ri===0?'bold 13px Segoe UI':'13px Segoe UI';
-    c.textBaseline='middle';c.textAlign='center';c.fillText(cell.textContent,x+CW/2,y+RH/2);
-  });});
-  const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='wertetabelle.png';a.click();
-}
-function exportBinomCSV(){
-  const n=parseInt(document.getElementById('bn-n').value);const p=parseFloat(document.getElementById('bn-p').value);
-  if(isNaN(n)||isNaN(p))return;
-  let csv='k;P(X=k);P(X<=k)\n';
-  for(let k=0;k<=n;k++)csv+=k+';'+binomPDF(n,p,k).toFixed(8)+';'+binomCDF(n,p,k).toFixed(8)+'\n';
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='binom.csv';a.click();
-}
-function exportHistCSV(){
-  const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
-  const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));
-  if(bounds.length!==freqs.length+1)return;
-  const total=freqs.reduce((a,b)=>a+b,0);let csv='von;bis;Breite;h;rel.h;Dichte\n';
-  freqs.forEach((_,i)=>{const w=bounds[i+1]-bounds[i];csv+=bounds[i]+';'+bounds[i+1]+';'+w+';'+freqs[i]+';'+(freqs[i]/total).toFixed(6)+';'+(freqs[i]/w).toFixed(6)+'\n';});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';a.click();
-}
+function exportChartPNG(cid,fname){const cv=document.getElementById(cid);if(!cv){alert('Kein Diagramm.');return;}const out=document.createElement('canvas');out.width=cv.width;out.height=cv.height;const c=out.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,out.width,out.height);c.drawImage(cv,0,0);const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download=(fname||'diagramm')+'.png';a.click();}
+function exportTableCSV(){const expr=document.getElementById('wt-func').value.trim();const from=parseFloat(document.getElementById('wt-from').value);const to=parseFloat(document.getElementById('wt-to').value);const step=parseFloat(document.getElementById('wt-step').value);if(!expr||isNaN(from)||isNaN(to)||isNaN(step)||step<=0||from>to)return;let csv='x;f(x)\n';for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}csv+=x+';'+fx+'\n';}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wertetabelle.csv';a.click();}
+function exportTablePNG(){const res=document.getElementById('wt-result');if(!res||!res.innerHTML){alert('Keine Tabelle.');return;}const rows=[...res.querySelectorAll('tr')];if(!rows.length)return;const cols=rows[0].querySelectorAll('th,td').length;const CW=140,RH=28,PAD=16,W=cols*CW+PAD*2,H=rows.length*RH+PAD*2;const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const c=cv.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,W,H);rows.forEach((row,ri)=>{[...row.querySelectorAll('th,td')].forEach((cell,ci)=>{const x=PAD+ci*CW,y=PAD+ri*RH;c.fillStyle=ri===0?'#e94560':ri%2===0?'#f5f5f5':'#fff';c.fillRect(x,y,CW,RH);c.strokeStyle='#ddd';c.lineWidth=.5;c.strokeRect(x,y,CW,RH);c.fillStyle=ri===0?'#fff':'#222';c.font=ri===0?'bold 13px Segoe UI':'13px Segoe UI';c.textBaseline='middle';c.textAlign='center';c.fillText(cell.textContent,x+CW/2,y+RH/2);});});const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='wertetabelle.png';a.click();}
+function exportBinomCSV(){const n=parseInt(document.getElementById('bn-n').value);const p=parseFloat(document.getElementById('bn-p').value);if(isNaN(n)||isNaN(p))return;let csv='k;P(X=k);P(X<=k)\n';for(let k=0;k<=n;k++)csv+=k+';'+binomPDF(n,p,k).toFixed(8)+';'+binomCDF(n,p,k).toFixed(8)+'\n';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='binom.csv';a.click();}
+function exportHistCSV(){const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));if(bounds.length!==freqs.length+1)return;const total=freqs.reduce((a,b)=>a+b,0);let csv='von;bis;Breite;h;rel.h;Dichte\n';freqs.forEach((_,i)=>{const w=bounds[i+1]-bounds[i];csv+=bounds[i]+';'+bounds[i+1]+';'+w+';'+freqs[i]+';'+(freqs[i]/total).toFixed(6)+';'+(freqs[i]/w).toFixed(6)+'\n';});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';a.click();}
 
 // ══════════════════════════════════════════════════════════
 // TASCHENRECHNER
@@ -552,140 +426,34 @@ function calcEval(){if(!calcExpr)return;try{let v=safeEval(calcExpr);updateMain(
 function calcClear(){calcExpr='';updateDisplay();updateMain('0');justEvaled=false;}
 function calcBack(){calcExpr=calcExpr.slice(0,-1);updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(roundDisp(v));}catch(e){}}
 function calcNeg(){if(calcExpr){calcExpr='-('+calcExpr+')';updateDisplay();}}
-document.addEventListener('keydown',e=>{
-  if(!document.getElementById('tab-calc').classList.contains('active'))return;
-  if(e.key>='0'&&e.key<='9')calcInput(e.key);
-  else if(e.key==='.')calcInput('.');
-  else if(e.key==='+')calcInput('+');else if(e.key==='-')calcInput('-');
-  else if(e.key==='*')calcInput('*');else if(e.key==='/'){ e.preventDefault();calcInput('/');}
-  else if(e.key==='(')calcInput('(');else if(e.key===')')calcInput(')');
-  else if(e.key==='^')calcInput('^');else if(e.key==='%')calcInput('%');
-  else if(e.key==='Enter'||e.key==='=')calcEval();
-  else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();
-});
+document.addEventListener('keydown',e=>{if(!document.getElementById('tab-calc').classList.contains('active'))return;if(e.key>='0'&&e.key<='9')calcInput(e.key);else if(e.key==='.')calcInput('.');else if(e.key==='+')calcInput('+');else if(e.key==='-')calcInput('-');else if(e.key==='*')calcInput('*');else if(e.key==='/'){ e.preventDefault();calcInput('/');}else if(e.key==='(')calcInput('(');else if(e.key===')')calcInput(')');else if(e.key==='^')calcInput('^');else if(e.key==='%')calcInput('%');else if(e.key==='Enter'||e.key==='=')calcEval();else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();});
 
 // ══════════════════════════════════════════════════════════
 // WERTETABELLE
 // ══════════════════════════════════════════════════════════
-function buildTable(){
-  const expr=document.getElementById('wt-func').value.trim();
-  const from=parseFloat(document.getElementById('wt-from').value);
-  const to=parseFloat(document.getElementById('wt-to').value);
-  const step=parseFloat(document.getElementById('wt-step').value);
-  const errEl=document.getElementById('wt-error');const res=document.getElementById('wt-result');
-  errEl.innerHTML='';res.innerHTML='';
-  if(!expr){errEl.innerHTML='<div class="error-msg">⚠ Funktion eingeben.</div>';return;}
-  if(isNaN(from)||isNaN(to)||from>to){errEl.innerHTML='<div class="error-msg">⚠ Ungültiger x-Bereich.</div>';return;}
-  if(isNaN(step)||step<=0){errEl.innerHTML='<div class="error-msg">⚠ Schrittweite > 0 erforderlich.</div>';return;}
-  let html='<table><tr><th>x</th><th>f(x) = '+escHtml(expr)+'</th></tr>';
-  for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}html+='<tr><td>'+x+'</td><td>'+fx+'</td></tr>';}
-  res.innerHTML=html+'</table>';
-}
+function buildTable(){const expr=document.getElementById('wt-func').value.trim();const from=parseFloat(document.getElementById('wt-from').value);const to=parseFloat(document.getElementById('wt-to').value);const step=parseFloat(document.getElementById('wt-step').value);const errEl=document.getElementById('wt-error');const res=document.getElementById('wt-result');errEl.innerHTML='';res.innerHTML='';if(!expr){errEl.innerHTML='<div class="error-msg">⚠ Funktion eingeben.</div>';return;}if(isNaN(from)||isNaN(to)||from>to){errEl.innerHTML='<div class="error-msg">⚠ Ungültiger x-Bereich.</div>';return;}if(isNaN(step)||step<=0){errEl.innerHTML='<div class="error-msg">⚠ Schrittweite > 0.</div>';return;}let html='<table><tr><th>x</th><th>f(x) = '+escHtml(expr)+'</th></tr>';for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}html+='<tr><td>'+x+'</td><td>'+fx+'</td></tr>';}res.innerHTML=html+'</table>';}
 
 // ══════════════════════════════════════════════════════════
-// BINOMIAL
+// BINOMIAL CHART
 // ══════════════════════════════════════════════════════════
 function binom(n,k){if(k<0||k>n)return 0;if(k===0||k===n)return 1;if(k>n-k)k=n-k;let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;}
 function binomPDF(n,p,k){return binom(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);}
 function binomCDF(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binomPDF(n,p,i);return s;}
 let binomChartInst=null,currentHL='eq';
 function setHL(m){currentHL=m;['eq','le','rng','none'].forEach(x=>{const b=document.getElementById('hl-'+x);if(b)b.classList.toggle('active',x===m);});}
-function binomLive(){
-  const n=parseInt(document.getElementById('bn-n').value);const p=parseFloat(document.getElementById('bn-p').value);
-  const kEq=parseInt(document.getElementById('bn-k-eq').value);const kLe=parseInt(document.getElementById('bn-k-le').value);
-  const k1=parseInt(document.getElementById('bn-k1').value);const k2=parseInt(document.getElementById('bn-k2').value);
-  const res=document.getElementById('binom-result');
-  if(isNaN(n)||isNaN(p)||p<0||p>1||n<1){res.innerHTML='<div class="error-msg">⚠ n≥1, 0≤p≤1</div>';return;}
-  const pEq=isNaN(kEq)?'—':binomPDF(n,p,kEq).toFixed(8);const pLe=isNaN(kLe)?'—':binomCDF(n,p,kLe).toFixed(8);
-  let pRng='—';if(!isNaN(k1)&&!isNaN(k2)&&k1<=k2){let s=0;for(let i=k1;i<=k2;i++)s+=binomPDF(n,p,i);pRng=s.toFixed(8);}
-  let html='<table><tr><th>Abfrage</th><th>Ergebnis</th></tr>';
-  html+='<tr><td style="color:#f9a825">P(X='+kEq+')</td><td>'+pEq+'</td></tr>';
-  html+='<tr><td style="color:#4fc3f7">P(X≤'+kLe+')</td><td>'+pLe+'</td></tr>';
-  html+='<tr><td style="color:#a8e063">P('+k1+'≤X≤'+k2+')</td><td>'+pRng+'</td></tr>';
-  html+='<tr><th>k</th><th>P(X=k)</th></tr>';
-  for(let k=0;k<=n;k++)html+='<tr><td>'+k+'</td><td>'+binomPDF(n,p,k).toFixed(6)+'</td></tr>';
-  res.innerHTML=html+'</table>';
-  const ks=[],data=[];for(let k=0;k<=n;k++){ks.push(k);data.push(parseFloat(binomPDF(n,p,k).toFixed(10)));}
-  const maxP=Math.max(...data);const barData=ks.map((k,i)=>({x:k,y:data[i]}));
-  function bCol(k){if(currentHL==='eq')return k===kEq?'rgba(249,168,37,.9)':'rgba(180,180,180,.45)';if(currentHL==='le')return k<=kLe?'rgba(79,195,247,.9)':'rgba(180,180,180,.45)';if(currentHL==='rng')return(k>=k1&&k<=k2)?'rgba(168,224,99,.9)':'rgba(180,180,180,.45)';return'rgba(233,69,96,.75)';}
-  function bStr(k){if(currentHL==='eq')return k===kEq?'#f57f17':'#aaa';if(currentHL==='le')return k<=kLe?'#0277bd':'#aaa';if(currentHL==='rng')return(k>=k1&&k<=k2)?'#558b2f':'#aaa';return'#c0392b';}
-  if(binomChartInst)binomChartInst.destroy();
-  const gp=makeGridPlugin(),ap=makeArrowPlugin('k','P(X=k)');
-  const bbp={id:'bb_'+Math.random().toString(36).slice(2),afterDraw(ch){
-    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-    const bw=Math.abs(xA.getPixelForValue(1)-xA.getPixelForValue(0));
-    c.save();barData.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.fillStyle=bCol(pt.x);c.strokeStyle=bStr(pt.x);c.lineWidth=1;c.fillRect(px-bw/2,py,bw,y0-py);c.strokeRect(px-bw/2,py,bw,y0-py);});c.restore();
-  }};
-  binomChartInst=new Chart(document.getElementById('binom-chart'),{
-    type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.22)},
-    plugins:[gp,ap,bbp]
-  });
-}
+function binomLive(){const n=parseInt(document.getElementById('bn-n').value);const p=parseFloat(document.getElementById('bn-p').value);const kEq=parseInt(document.getElementById('bn-k-eq').value);const kLe=parseInt(document.getElementById('bn-k-le').value);const k1=parseInt(document.getElementById('bn-k1').value);const k2=parseInt(document.getElementById('bn-k2').value);const res=document.getElementById('binom-result');if(isNaN(n)||isNaN(p)||p<0||p>1||n<1){res.innerHTML='<div class="error-msg">⚠ n≥1, 0≤p≤1</div>';return;}const pEq=isNaN(kEq)?'—':binomPDF(n,p,kEq).toFixed(8);const pLe=isNaN(kLe)?'—':binomCDF(n,p,kLe).toFixed(8);let pRng='—';if(!isNaN(k1)&&!isNaN(k2)&&k1<=k2){let s=0;for(let i=k1;i<=k2;i++)s+=binomPDF(n,p,i);pRng=s.toFixed(8);}let html='<table><tr><th>Abfrage</th><th>Ergebnis</th></tr><tr><td style="color:#f9a825">P(X='+kEq+')</td><td>'+pEq+'</td></tr><tr><td style="color:#4fc3f7">P(X≤'+kLe+')</td><td>'+pLe+'</td></tr><tr><td style="color:#a8e063">P('+k1+'≤X≤'+k2+')</td><td>'+pRng+'</td></tr><tr><th>k</th><th>P(X=k)</th></tr>';for(let k=0;k<=n;k++)html+='<tr><td>'+k+'</td><td>'+binomPDF(n,p,k).toFixed(6)+'</td></tr>';res.innerHTML=html+'</table>';const ks=[],data=[];for(let k=0;k<=n;k++){ks.push(k);data.push(parseFloat(binomPDF(n,p,k).toFixed(10)));}const maxP=Math.max(...data);const barData=ks.map((k,i)=>({x:k,y:data[i]}));function bCol(k){if(currentHL==='eq')return k===kEq?'rgba(249,168,37,.9)':'rgba(180,180,180,.45)';if(currentHL==='le')return k<=kLe?'rgba(79,195,247,.9)':'rgba(180,180,180,.45)';if(currentHL==='rng')return(k>=k1&&k<=k2)?'rgba(168,224,99,.9)':'rgba(180,180,180,.45)';return'rgba(233,69,96,.75)';}function bStr(k){if(currentHL==='eq')return k===kEq?'#f57f17':'#aaa';if(currentHL==='le')return k<=kLe?'#0277bd':'#aaa';if(currentHL==='rng')return(k>=k1&&k<=k2)?'#558b2f':'#aaa';return'#c0392b';}if(binomChartInst)binomChartInst.destroy();const gp=makeGridPlugin(),ap=makeArrowPlugin('k','P(X=k)');const bbp={id:'bb_'+Math.random().toString(36).slice(2),afterDraw(ch){const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);const bw=Math.abs(xA.getPixelForValue(1)-xA.getPixelForValue(0));c.save();barData.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.fillStyle=bCol(pt.x);c.strokeStyle=bStr(pt.x);c.lineWidth=1;c.fillRect(px-bw/2,py,bw,y0-py);c.strokeRect(px-bw/2,py,bw,y0-py);});c.restore();}};binomChartInst=new Chart(document.getElementById('binom-chart'),{type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.22)},plugins:[gp,ap,bbp]});}
 
 // ══════════════════════════════════════════════════════════
 // STABDIAGRAMM
 // ══════════════════════════════════════════════════════════
 let stabChartInst=null;
-function drawStab(){
-  const xs=document.getElementById('stab-x').value.split(',').map(s=>parseFloat(s.trim()));
-  const ps=document.getElementById('stab-p').value.split(',').map(s=>parseFloat(s.trim()));
-  const ylabel=document.getElementById('stab-ylabel').value||'h';
-  const type=document.getElementById('stab-type').value;
-  const errEl=document.getElementById('stab-error');const statsEl=document.getElementById('stab-stats');
-  errEl.innerHTML='';const errs=[];
-  if(xs.some(isNaN))errs.push('⚠ Ungültige x-Werte.');if(ps.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
-  if(xs.length!==ps.length)errs.push('⚠ Anzahl x ('+xs.length+') ≠ h ('+ps.length+').');
-  if(!xs.some(isNaN)&&!ps.some(isNaN)){if(ps.some(v=>v<0))errs.push('⚠ Negative Werte.');if(type==='prob'){const s=ps.reduce((a,b)=>a+b,0);if(Math.abs(s-1)>.001)errs.push('⚠ Summe='+s.toFixed(6)+' ≠ 1.');}}
-  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');statsEl.style.display='none';if(stabChartInst){stabChartInst.destroy();stabChartInst=null;}return;}
-  const sum=ps.reduce((a,b)=>a+b,0),mu=xs.reduce((a,x,i)=>a+x*ps[i],0);
-  const varV=xs.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);
-  statsEl.style.display='block';statsEl.innerHTML='<b>Σ:</b> '+sum.toFixed(6)+' | <b>E(X):</b> '+mu.toFixed(4)+' | <b>Var(X):</b> '+varV.toFixed(4)+' | <b>σ:</b> '+Math.sqrt(varV).toFixed(4);
-  const minX=Math.min(...xs),maxX=Math.max(...xs),maxP=Math.max(...ps);const padX=(maxX-minX)*.15||1;
-  const sd=xs.map((x,i)=>({x,y:ps[i]}));if(stabChartInst)stabChartInst.destroy();
-  const gp=makeGridPlugin(),ap=makeArrowPlugin('x',ylabel);
-  const slp={id:'sl_'+Math.random().toString(36).slice(2),afterDraw(ch){
-    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-    c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
-    sd.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});
-    c.restore();
-  }};
-  stabChartInst=new Chart(document.getElementById('stab-chart'),{
-    type:'scatter',data:{datasets:[{data:[{x:minX,y:0}]}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(minX-padX,maxX+padX,0,maxP*1.25)},
-    plugins:[gp,ap,slp]
-  });
-}
+function drawStab(){const xs=document.getElementById('stab-x').value.split(',').map(s=>parseFloat(s.trim()));const ps=document.getElementById('stab-p').value.split(',').map(s=>parseFloat(s.trim()));const ylabel=document.getElementById('stab-ylabel').value||'h';const type=document.getElementById('stab-type').value;const errEl=document.getElementById('stab-error');const statsEl=document.getElementById('stab-stats');errEl.innerHTML='';const errs=[];if(xs.some(isNaN))errs.push('⚠ Ungültige x-Werte.');if(ps.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');if(xs.length!==ps.length)errs.push('⚠ Anzahl x≠h.');if(!xs.some(isNaN)&&!ps.some(isNaN)){if(ps.some(v=>v<0))errs.push('⚠ Negative Werte.');if(type==='prob'){const s=ps.reduce((a,b)=>a+b,0);if(Math.abs(s-1)>.001)errs.push('⚠ Summe='+s.toFixed(6)+'≠1.');}}if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');statsEl.style.display='none';if(stabChartInst){stabChartInst.destroy();stabChartInst=null;}return;}const sum=ps.reduce((a,b)=>a+b,0),mu=xs.reduce((a,x,i)=>a+x*ps[i],0);const varV=xs.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);statsEl.style.display='block';statsEl.innerHTML='<b>Σ:</b> '+sum.toFixed(6)+' | <b>E(X):</b> '+mu.toFixed(4)+' | <b>Var(X):</b> '+varV.toFixed(4)+' | <b>σ:</b> '+Math.sqrt(varV).toFixed(4);const minX=Math.min(...xs),maxX=Math.max(...xs),maxP=Math.max(...ps);const padX=(maxX-minX)*.15||1;const sd=xs.map((x,i)=>({x,y:ps[i]}));if(stabChartInst)stabChartInst.destroy();const gp=makeGridPlugin(),ap=makeArrowPlugin('x',ylabel);const slp={id:'sl_'+Math.random().toString(36).slice(2),afterDraw(ch){const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);c.save();c.strokeStyle='#1565c0';c.lineWidth=3;sd.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});c.restore();}};stabChartInst=new Chart(document.getElementById('stab-chart'),{type:'scatter',data:{datasets:[{data:[{x:minX,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(minX-padX,maxX+padX,0,maxP*1.25)},plugins:[gp,ap,slp]});}
 
 // ══════════════════════════════════════════════════════════
 // HISTOGRAMM
 // ══════════════════════════════════════════════════════════
 let histChartInst=null;
-function drawHist(){
-  const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
-  const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));
-  const errEl=document.getElementById('hist-error');const histEl=document.getElementById('hist-result');
-  errEl.innerHTML='';const errs=[];
-  if(bounds.some(isNaN))errs.push('⚠ Ungültige Grenzen.');if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
-  if(!bounds.some(isNaN)&&!freqs.some(isNaN)){if(bounds.length!==freqs.length+1)errs.push('⚠ '+freqs.length+' Häuf. → '+(freqs.length+1)+' Grenzen.');if(freqs.some(v=>v<0))errs.push('⚠ Neg. Häufigkeiten.');for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen aufsteigend.');}
-  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');histEl.style.display='none';if(histChartInst){histChartInst.destroy();histChartInst=null;}return;}
-  const widths=freqs.map((_,i)=>bounds[i+1]-bounds[i]);const densities=freqs.map((f,i)=>f/widths[i]);const total=freqs.reduce((a,b)=>a+b,0);
-  histEl.style.display='block';let html='<table><tr><th>Klasse</th><th>Breite</th><th>h</th><th>rel.h</th><th>Dichte</th></tr>';
-  freqs.forEach((_,i)=>html+='<tr><td>['+bounds[i]+','+bounds[i+1]+')</td><td>'+widths[i]+'</td><td>'+freqs[i]+'</td><td>'+(freqs[i]/total).toFixed(4)+'</td><td>'+densities[i].toFixed(4)+'</td></tr>');
-  histEl.innerHTML=html+'</table>';
-  const maxD=Math.max(...densities),xMin=bounds[0],xMax=bounds[bounds.length-1];const hd={bounds,densities};
-  if(histChartInst)histChartInst.destroy();
-  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx');
-  const hbp={id:'hb_'+Math.random().toString(36).slice(2),afterDraw(ch){
-    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-    c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();
-  }};
-  histChartInst=new Chart(document.getElementById('hist-chart'),{
-    type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},
-    plugins:[gp,ap,hbp]
-  });
-}
+function drawHist(){const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));const errEl=document.getElementById('hist-error');const histEl=document.getElementById('hist-result');errEl.innerHTML='';const errs=[];if(bounds.some(isNaN))errs.push('⚠ Ungültige Grenzen.');if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');if(!bounds.some(isNaN)&&!freqs.some(isNaN)){if(bounds.length!==freqs.length+1)errs.push('⚠ Grenzenanzahl falsch.');if(freqs.some(v=>v<0))errs.push('⚠ Neg. Häufigkeiten.');for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen aufsteigend.');}if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');histEl.style.display='none';if(histChartInst){histChartInst.destroy();histChartInst=null;}return;}const widths=freqs.map((_,i)=>bounds[i+1]-bounds[i]);const densities=freqs.map((f,i)=>f/widths[i]);const total=freqs.reduce((a,b)=>a+b,0);histEl.style.display='block';let html='<table><tr><th>Klasse</th><th>Breite</th><th>h</th><th>rel.h</th><th>Dichte</th></tr>';freqs.forEach((_,i)=>html+='<tr><td>['+bounds[i]+','+bounds[i+1]+')</td><td>'+widths[i]+'</td><td>'+freqs[i]+'</td><td>'+(freqs[i]/total).toFixed(4)+'</td><td>'+densities[i].toFixed(4)+'</td></tr>');histEl.innerHTML=html+'</table>';const maxD=Math.max(...densities),xMin=bounds[0],xMax=bounds[bounds.length-1];const hd={bounds,densities};if(histChartInst)histChartInst.destroy();const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx');const hbp={id:'hb_'+Math.random().toString(36).slice(2),afterDraw(ch){const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();}};histChartInst=new Chart(document.getElementById('hist-chart'),{type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},plugins:[gp,ap,hbp]});}
 
 // ══════════════════════════════════════════════════════════
 // GRAPHENPLOTTER
@@ -693,168 +461,109 @@ function drawHist(){
 let graphChartInst=null,graphFuncCount=1;
 const GCOLS=['#e94560','#1565c0','#2e7d32','#f9a825','#6a1b9a','#00838f'];
 const GLBLS=['f₁','f₂','f₃','f₄','f₅','f₆'];
-function addGraphFunc(){
-  if(graphFuncCount>=6)return;const id=graphFuncCount++;
-  const div=document.createElement('div');div.className='form-row graph-func-row';div.dataset.id=id;
-  const iid='graph-expr-'+id;
-  div.innerHTML='<label>'+GLBLS[id]+'(x)=</label><input type="text" class="graph-expr" id="'+iid+'" placeholder="Funktion…" style="width:240px" oninput="drawGraph()"><input type="color" class="graph-color" value="'+GCOLS[id]+'" oninput="drawGraph()">';
-  document.getElementById('graph-funcs').appendChild(div);
-  buildMiniKbd('graph-kbd',()=>lastGraphInput||document.getElementById(iid));
-}
+function addGraphFunc(){if(graphFuncCount>=6)return;const id=graphFuncCount++;const div=document.createElement('div');div.className='form-row graph-func-row';div.dataset.id=id;const iid='graph-expr-'+id;div.innerHTML='<label>'+GLBLS[id]+'(x)=</label><input type="text" class="graph-expr" id="'+iid+'" placeholder="Funktion…" style="width:240px" oninput="drawGraph()"><input type="color" class="graph-color" value="'+GCOLS[id]+'" oninput="drawGraph()">';document.getElementById('graph-funcs').appendChild(div);buildMiniKbd('graph-kbd',()=>lastGraphInput||document.getElementById(iid));}
 function removeGraphFunc(){if(graphFuncCount<=1)return;document.querySelectorAll('.graph-func-row')[graphFuncCount-1].remove();graphFuncCount--;drawGraph();}
-function drawGraph(){
-  const xmin=parseFloat(document.getElementById('graph-xmin').value);const xmax=parseFloat(document.getElementById('graph-xmax').value);const pts=parseInt(document.getElementById('graph-pts').value)||600;
-  if(isNaN(xmin)||isNaN(xmax)||xmin>=xmax)return;
-  const rows=document.querySelectorAll('.graph-func-row');const datasets=[];
-  rows.forEach(row=>{
-    const expr=row.querySelector('.graph-expr').value.trim();const color=row.querySelector('.graph-color').value;if(!expr)return;
-    const step=(xmax-xmin)/pts,dp=[];
-    for(let i=0;i<=pts;i++){const x=xmin+i*step;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}dp.push({x:Math.round(x*1e8)/1e8,y:y!==null?Math.round(y*1e8)/1e8:null});}
-    datasets.push({label:'',data:dp,borderColor:color,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,spanGaps:false,tension:0});
-  });
-  if(!datasets.length)return;
-  let allY=datasets.flatMap(d=>d.data.map(p=>p.y).filter(y=>y!==null));if(!allY.length)return;
-  let yMin=Math.min(...allY),yMax=Math.max(...allY);const yPad=(yMax-yMin)*.1||1;
-  if(graphChartInst)graphChartInst.destroy();
-  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');
-  graphChartInst=new Chart(document.getElementById('graph-chart'),{
-    type:'line',data:{datasets},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:{right:55,top:35,left:18,bottom:30}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},
-    plugins:[gp,ap]
-  });
+function drawGraph(){const xmin=parseFloat(document.getElementById('graph-xmin').value);const xmax=parseFloat(document.getElementById('graph-xmax').value);const pts=parseInt(document.getElementById('graph-pts').value)||600;if(isNaN(xmin)||isNaN(xmax)||xmin>=xmax)return;const rows=document.querySelectorAll('.graph-func-row');const datasets=[];rows.forEach(row=>{const expr=row.querySelector('.graph-expr').value.trim();const color=row.querySelector('.graph-color').value;if(!expr)return;const step=(xmax-xmin)/pts,dp=[];for(let i=0;i<=pts;i++){const x=xmin+i*step;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}dp.push({x:Math.round(x*1e8)/1e8,y:y!==null?Math.round(y*1e8)/1e8:null});}datasets.push({label:'',data:dp,borderColor:color,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,spanGaps:false,tension:0});});if(!datasets.length)return;let allY=datasets.flatMap(d=>d.data.map(p=>p.y).filter(y=>y!==null));if(!allY.length)return;let yMin=Math.min(...allY),yMax=Math.max(...allY);const yPad=(yMax-yMin)*.1||1;if(graphChartInst)graphChartInst.destroy();const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');graphChartInst=new Chart(document.getElementById('graph-chart'),{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:{right:55,top:35,left:18,bottom:30}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},plugins:[gp,ap]});}
+
+// ══════════════════════════════════════════════════════════
+// BAUMDIAGRAMM – Bruch-Arithmetik
+// ══════════════════════════════════════════════════════════
+
+function gcd(a,b){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;}
+function lcm(a,b){return Math.abs(a*b)/gcd(a,b);}
+
+// Konvertiert float → {n,d} als gekürzten Bruch
+function floatToFrac(x,maxD=10000){
+  if(!isFinite(x))return{n:0,d:1};
+  const sign=x<0?-1:1;x=Math.abs(x);
+  for(let d=1;d<=maxD;d++){const n=Math.round(x*d);if(Math.abs(n/d-x)<1e-9)return{n:sign*n,d};}
+  return{n:Math.round(sign*x*maxD),d:maxD};
 }
 
-// ══════════════════════════════════════════════════════════
-// BAUMDIAGRAMM – Hilfsfunktionen
-// ══════════════════════════════════════════════════════════
+// Gegeben eine Liste von Wahrscheinlichkeiten (floats),
+// gibt gemeinsamen Nenner zurück, sodass alle als n/D darstellbar sind
+function commonDenominator(probs){
+  let D=1;
+  probs.forEach(p=>{
+    const f=floatToFrac(p);
+    D=lcm(D,f.d);
+    if(D>100000)D=100000;
+  });
+  return D;
+}
 
-// Wahrscheinlichkeit als Bruch
-function fmtFrac2(p){
+// Formatiert p als Bruch mit gegebenem Nenner D
+function fmtWithDenom(p,D){
   if(!isFinite(p))return'?';
-  for(let d=1;d<=10000;d++){const n=Math.round(p*d);if(Math.abs(n/d-p)<1e-9)return n===d?'1':(n===0?'0':n+'/'+d);}
-  return parseFloat(p.toPrecision(5)).toString();
+  const n=Math.round(p*D);
+  if(n===0)return'0';
+  if(n===D)return'1';
+  const g=gcd(Math.abs(n),D);
+  // Nicht kürzen – gemeinsamer Nenner bleibt
+  return n+'/'+D;
 }
-function fmtP(p){return String(parseFloat(p.toPrecision(6)));}
-function fmtFrac(a,b){return a+'/'+b;}
 
-// SVG-Label: mit oder ohne Überstrich
-// Gibt fertigen SVG-Textinhalt zurück (kein umschließendes <text>)
+// Berechnet gemeinsamen Nenner für alle Wahrscheinlichkeiten in den Pfaden
+// und gibt eine Map zurück: float → Bruch-String
+function buildFracMap(allPaths){
+  // Sammle alle einzigartigen Wahrscheinlichkeiten (Kanten + Pfadprodukte)
+  const allProbs=new Set();
+  allPaths.forEach(([path,prob])=>{
+    path.forEach(step=>allProbs.add(step.prob));
+    allProbs.add(prob);
+  });
+  const probArr=[...allProbs].filter(p=>isFinite(p)&&p>0&&p<1);
+  const D=commonDenominator(probArr);
+  const map=new Map();
+  allProbs.forEach(p=>{map.set(p,fmtWithDenom(p,D));});
+  // Sonderfälle
+  map.set(0,'0');map.set(1,'1');
+  return{map,D};
+}
+
 function svgLabel(label,overline){
   if(!overline)return escHtml(label);
   return'<tspan text-decoration="overline">'+escHtml(label)+'</tspan>';
 }
 
-// Kern-Zeichenroutine: zeichnet Knoten als Buchstaben-Label (kein Punkt),
-// Wahrscheinlichkeit mittig über dem Zweig, Überstrich-Support
-function renderEdgeAndNode(svg_parts, fx,fy, tx,ty, edgeLabel,edgeOverline, probStr, nodeLabel,nodeOverline, isLeaf){
-  // Linie
-  svg_parts.push('<line x1="'+fx+'" y1="'+fy+'" x2="'+tx+'" y2="'+ty+'" stroke="#1565c0" stroke-width="2"/>');
-
-  // Mitte der Linie
-  const mx=(fx+tx)/2, my=(fy+ty)/2;
-  // Normalenvektor (senkrecht zur Linie, nach oben/links versetzt)
-  const dx=tx-fx, dy=ty-fy, len=Math.sqrt(dx*dx+dy*dy)||1;
-  // Versatz senkrecht zur Linie, Richtung: nach "oben" im Koordinatensystem
-  const nx=-dy/len, ny=dx/len;
-  // Wahrscheinlichkeit: mittig über dem Zweig (senkrecht versetzt)
-  const PROB_OFFSET=14;
-  const px=mx+nx*PROB_OFFSET, py=my+ny*PROB_OFFSET;
-  svg_parts.push('<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#1a237e">'+escHtml(probStr)+'</text>');
-
-  // Ziel-Knoten: Label des Ereignisses statt Punkt
-  svg_parts.push('<text x="'+tx+'" y="'+ty+'" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="bold" fill="#1565c0">'+svgLabel(nodeLabel,nodeOverline)+'</text>');
-}
-
 // ══════════════════════════════════════════════════════════
-// MANUELLER BAUM – knoten-basiertes Modell
+// MANUELLER BAUM
 // ══════════════════════════════════════════════════════════
-let manualTree={
-  id:0,parentId:null,label:'',prob:'1',children:[
-    {id:1,parentId:0,label:'A',prob:'0.6',children:[
-      {id:3,parentId:1,label:'X',prob:'0.7',children:[]},
-      {id:4,parentId:1,label:'Y',prob:'0.3',children:[]}
-    ]},
-    {id:2,parentId:0,label:'B',prob:'0.4',children:[
-      {id:5,parentId:2,label:'X',prob:'0.7',children:[]},
-      {id:6,parentId:2,label:'Y',prob:'0.3',children:[]}
-    ]}
-  ]
-};
+let manualTree={id:0,parentId:null,label:'',prob:'1',children:[{id:1,parentId:0,label:'A',prob:'0.6',children:[{id:3,parentId:1,label:'X',prob:'0.7',children:[]},{id:4,parentId:1,label:'Y',prob:'0.3',children:[]}]},{id:2,parentId:0,label:'B',prob:'0.4',children:[{id:5,parentId:2,label:'X',prob:'0.7',children:[]},{id:6,parentId:2,label:'Y',prob:'0.3',children:[]}]}]};
 let manualNextId=7;
-
 function findNode(tree,id){if(tree.id===id)return tree;for(const c of tree.children){const f=findNode(c,id);if(f)return f;}return null;}
 function removeNodeFromTree(tree,id){tree.children=tree.children.filter(c=>c.id!==id);tree.children.forEach(c=>removeNodeFromTree(c,id));}
 
-function renderLevelEditor(){
-  const w=document.getElementById('tree-level-editor');w.innerHTML='';
-  renderNodeEditor(manualTree,w,0);
-}
+function renderLevelEditor(){const w=document.getElementById('tree-level-editor');w.innerHTML='';renderNodeEditor(manualTree,w,0);}
 function renderNodeEditor(node,container,depth){
   if(depth===0){node.children.forEach(c=>renderNodeEditor(c,container,depth+1));return;}
   const box=document.createElement('div');
   const indent=Math.min(depth-1,5)*20;
   const lvlColor=['#e94560','#4fc3f7','#a8e063','#f9a825','#c084fc','#fb923c'][Math.min(depth-1,5)];
   box.style.cssText='margin-left:'+indent+'px;margin-bottom:6px;background:#0d1a2e;border:1px solid #253a5e;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
-  box.innerHTML=
-    '<span style="color:'+lvlColor+';font-weight:bold;font-size:.8rem;min-width:56px">Stufe '+depth+'</span>'
-    +'<input type="text" value="'+escHtml(node.label)+'" placeholder="Label" '
-    +'onchange="findNode(manualTree,'+node.id+').label=this.value;renderTree()" '
-    +'style="width:52px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+  box.innerHTML='<span style="color:'+lvlColor+';font-weight:bold;font-size:.8rem;min-width:56px">Stufe '+depth+'</span>'
+    +'<input type="text" value="'+escHtml(node.label)+'" placeholder="Label" onchange="findNode(manualTree,'+node.id+').label=this.value;renderTree()" style="width:52px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
     +'<span style="color:#aaa;font-size:.82rem">p=</span>'
-    +'<input type="text" value="'+escHtml(node.prob)+'" '
-    +'onchange="findNode(manualTree,'+node.id+').prob=this.value;renderTree()" '
-    +'style="width:70px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+    +'<input type="text" value="'+escHtml(node.prob)+'" onchange="findNode(manualTree,'+node.id+').prob=this.value;renderTree()" style="width:70px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
     +'<button onclick="addChildNode('+node.id+')" style="background:#253a5e;border:1px solid #4fc3f7;color:#4fc3f7;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:.78rem">+ Kind</button>'
     +'<button onclick="removeNodeById('+node.id+')" style="background:#253a5e;border:1px solid #e94560;color:#e94560;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:.78rem">✕ Ast</button>';
   container.appendChild(box);
   node.children.forEach(c=>renderNodeEditor(c,container,depth+1));
 }
-function addChildNode(parentId){
-  const parent=findNode(manualTree,parentId);if(!parent)return;
-  parent.children.push({id:manualNextId++,parentId:parentId,label:'?',prob:'0.5',children:[]});
-  renderLevelEditor();renderTree();
-}
+function addChildNode(parentId){const parent=findNode(manualTree,parentId);if(!parent)return;parent.children.push({id:manualNextId++,parentId:parentId,label:'?',prob:'0.5',children:[]});renderLevelEditor();renderTree();}
 function removeNodeById(id){removeNodeFromTree(manualTree,id);renderLevelEditor();renderTree();}
-function manualAddLevel(){
-  function addToLeaves(node){
-    if(node.children.length===0&&node.id!==0){
-      node.children.push({id:manualNextId++,parentId:node.id,label:'J',prob:'0.5',children:[]});
-      node.children.push({id:manualNextId++,parentId:node.id,label:'N',prob:'0.5',children:[]});
-    }else node.children.forEach(c=>addToLeaves(c));
-  }
-  addToLeaves(manualTree);renderLevelEditor();renderTree();
-}
-function manualRemoveLevel(){
-  function removeLeaves(node){
-    if(node.children.length>0&&node.children.every(c=>c.children.length===0))node.children=[];
-    else node.children.forEach(c=>removeLeaves(c));
-  }
-  if(manualTree.children.length>0){removeLeaves(manualTree);renderLevelEditor();renderTree();}
-}
+function manualAddLevel(){function addToLeaves(node){if(node.children.length===0&&node.id!==0){node.children.push({id:manualNextId++,parentId:node.id,label:'J',prob:'0.5',children:[]});node.children.push({id:manualNextId++,parentId:node.id,label:'N',prob:'0.5',children:[]});}else node.children.forEach(c=>addToLeaves(c));}addToLeaves(manualTree);renderLevelEditor();renderTree();}
+function manualRemoveLevel(){function removeLeaves(node){if(node.children.length>0&&node.children.every(c=>c.children.length===0))node.children=[];else node.children.forEach(c=>removeLeaves(c));}if(manualTree.children.length>0){removeLeaves(manualTree);renderLevelEditor();renderTree();}}
 
-// renderTree: Knotenbaum → Pfadliste → Zeichnung
 function renderTree(){
   const showProd=document.getElementById('tree-show-prod')?.checked??true;
   const showSum=document.getElementById('tree-show-sum')?.checked??true;
   const errEl=document.getElementById('tree-manual-error');errEl.innerHTML='';
   const warns=[];
-  function checkSums(node){
-    if(node.children.length===0)return;
-    const s=node.children.reduce((a,c)=>a+(parseFloat(c.prob)||0),0);
-    if(Math.abs(s-1)>.001)warns.push('⚠ Knoten "'+node.label+'": Kinder summieren zu '+s.toFixed(4)+' ≠ 1');
-    node.children.forEach(c=>checkSums(c));
-  }
+  function checkSums(node){if(node.children.length===0)return;const s=node.children.reduce((a,c)=>a+(parseFloat(c.prob)||0),0);if(Math.abs(s-1)>.001)warns.push('⚠ Knoten "'+node.label+'": Kinder summieren zu '+s.toFixed(4)+' ≠ 1');node.children.forEach(c=>checkSums(c));}
   checkSums(manualTree);
   if(warns.length)errEl.innerHTML=warns.map(w=>'<div class="error-msg">'+w+'</div>').join('');
-  function extractPaths(node,pathSoFar,probSoFar,labelsSoFar){
-    if(node.children.length===0&&node.id!==0)return[[pathSoFar,probSoFar,labelsSoFar]];
-    const res=[];
-    node.children.forEach(c=>{
-      const newPath=[...pathSoFar,{label:c.label,probStr:c.prob,prob:parseFloat(c.prob)||0,overline:false,nodeId:c.id,parentNodeId:node.id}];
-      res.push(...extractPaths(c,newPath,probSoFar*(parseFloat(c.prob)||0),[...labelsSoFar,c.label]));
-    });
-    return res;
-  }
+  function extractPaths(node,pathSoFar,probSoFar,labelsSoFar){if(node.children.length===0&&node.id!==0)return[[pathSoFar,probSoFar,labelsSoFar]];const res=[];node.children.forEach(c=>{const newPath=[...pathSoFar,{label:c.label,prob:parseFloat(c.prob)||0,overline:false,nodeId:c.id}];res.push(...extractPaths(c,newPath,probSoFar*(parseFloat(c.prob)||0),[...labelsSoFar,c.label]));});return res;}
   const allPaths=extractPaths(manualTree,[],1,[]);
   if(!allPaths.length)return;
   drawTreeFromPaths(allPaths,showProd,showSum);
@@ -864,88 +573,71 @@ function renderTree(){
 // AUTO-MODI
 // ══════════════════════════════════════════════════════════
 let treeMode='manual';
-function setTreeMode(m){
-  treeMode=m;
-  ['manual','binom','urn'].forEach(x=>{
-    document.getElementById('tree-panel-'+x).style.display=x===m?'':'none';
-    document.getElementById('tree-mode-'+x).classList.toggle('active',x===m);
-  });
-  if(m==='manual')renderTree();else buildAutoTree();
-}
+function setTreeMode(m){treeMode=m;['manual','binom','urn'].forEach(x=>{document.getElementById('tree-panel-'+x).style.display=x===m?'':'none';document.getElementById('tree-mode-'+x).classList.toggle('active',x===m);});if(m==='manual')renderTree();else buildAutoTree();}
 function buildAutoTree(){if(treeMode==='binom')buildBinomTree();else if(treeMode==='urn')buildUrnTree();}
 
+// BINOMIAL – nur Treffer-Label, Niete = Überstrich
 function buildBinomTree(){
   const n=parseInt(document.getElementById('tb-n').value)||2;
   const p=parseFloat(document.getElementById('tb-p').value);
   const hit=document.getElementById('tb-hit').value||'T';
-  const miss=document.getElementById('tb-miss').value||'T';
   const showProd=document.getElementById('tb-show-prod').checked;
   const showSum=document.getElementById('tb-show-sum').checked;
   if(isNaN(p)||p<0||p>1||n<1)return;
   const q=1-p;
-  // Pfade direkt aufbauen (regulärer Binomialbaum)
-  function buildRegularPaths(depth,curDepth,prefix,prob,lbls){
-    if(curDepth===depth)return[[prefix,prob,lbls]];
-    const res=[];
-    // Treffer
-    res.push(...buildRegularPaths(depth,curDepth+1,
-      [...prefix,{label:hit,probStr:fmtP(p),prob:p,overline:false,nodeId:curDepth*1000+lbls.length*2,parentNodeId:-1}],
-      prob*p,[...lbls,hit]));
-    // Niete (Überstrich)
-    res.push(...buildRegularPaths(depth,curDepth+1,
-      [...prefix,{label:miss,probStr:fmtP(q),prob:q,overline:true,nodeId:curDepth*1000+lbls.length*2+1,parentNodeId:-1}],
-      prob*q,[...lbls,miss]));
-    return res;
-  }
-  // Für regulären Baum brauchen wir stabile Node-IDs; wir bauen einen echten Knoten-Baum
-  const paths=buildBinomPaths(n,p,hit,miss);
-  drawTreeFromPaths(paths,showProd,showSum);
-}
-
-function buildBinomPaths(n,p,hit,miss){
-  const q=1-p;
+  let nid=1;
   function rec(depth,prefix,prob,lbls){
     if(depth===n)return[[prefix,prob,lbls]];
     const res=[];
-    let hId=prefix.length>0?prefix[prefix.length-1].nodeId*2+1:1;
-    let mId=hId+1;
-    res.push(...rec(depth+1,[...prefix,{label:hit,probStr:fmtP(p),prob:p,overline:false,nodeId:hId*10+depth}],prob*p,[...lbls,hit]));
-    res.push(...rec(depth+1,[...prefix,{label:miss,probStr:fmtP(q),prob:q,overline:true, nodeId:mId*10+depth}],prob*q,[...lbls,miss]));
+    const hId=nid++;const mId=nid++;
+    res.push(...rec(depth+1,[...prefix,{label:hit,prob:p,overline:false,nodeId:hId}],prob*p,[...lbls,hit]));
+    res.push(...rec(depth+1,[...prefix,{label:hit,prob:q,overline:true, nodeId:mId}],prob*q,[...lbls,hit]));
     return res;
   }
-  return rec(0,[],1,[]);
+  const allPaths=rec(0,[],1,[]);
+  drawTreeFromPaths(allPaths,showProd,showSum);
 }
 
+// URNE – mehrere Farben
+let urnColors=[{label:'R',count:3},{label:'B',count:2}];
+function renderUrnColors(){
+  const w=document.getElementById('urn-colors-wrap');w.innerHTML='';
+  urnColors.forEach((c,i)=>{
+    const row=document.createElement('div');row.className='urn-color-row';
+    row.innerHTML='<span style="color:#aaa;font-size:.85rem;min-width:60px">Farbe '+(i+1)+':</span>'
+      +'<input type="text" value="'+escHtml(c.label)+'" onchange="urnColors['+i+'].label=this.value;buildAutoTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:5px 8px;border-radius:7px;font-size:.9rem">'
+      +'<span style="color:#aaa;font-size:.85rem">Anzahl:</span>'
+      +'<input type="number" value="'+c.count+'" min="0" onchange="urnColors['+i+'].count=parseInt(this.value)||0;buildAutoTree()" style="width:65px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:5px 8px;border-radius:7px;font-size:.9rem">';
+    w.appendChild(row);
+  });
+}
+function addUrnColor(){if(urnColors.length>=6)return;urnColors.push({label:'G',count:1});renderUrnColors();buildAutoTree();}
+function removeUrnColor(){if(urnColors.length<=2)return;urnColors.pop();renderUrnColors();buildAutoTree();}
+
 function buildUrnTree(){
-  const R=parseInt(document.getElementById('tu-r').value);
-  const B=parseInt(document.getElementById('tu-b').value);
   const k=parseInt(document.getElementById('tu-k').value)||2;
   const replace=document.getElementById('tu-replace').checked;
   const showProd=document.getElementById('tu-show-prod').checked;
   const showSum=document.getElementById('tu-show-sum').checked;
   const errEl=document.getElementById('tu-error');errEl.innerHTML='';
-  if(isNaN(R)||isNaN(B)||R<0||B<0||(R+B)<1){errEl.innerHTML='<div class="error-msg">⚠ Ungültige Urne.</div>';return;}
-  if(!replace&&k>R+B){errEl.innerHTML='<div class="error-msg">⚠ k ≤ Gesamtzahl.</div>';return;}
-  const paths=buildUrnPaths(R,B,k,replace);
-  drawTreeFromPaths(paths,showProd,showSum);
-}
-
-function buildUrnPaths(R,B,k,replace){
+  const total=urnColors.reduce((a,c)=>a+c.count,0);
+  if(total<1){errEl.innerHTML='<div class="error-msg">⚠ Mindestens 1 Kugel.</div>';return;}
+  if(!replace&&k>total){errEl.innerHTML='<div class="error-msg">⚠ k ≤ Gesamtzahl.</div>';return;}
   let nid=100;
-  function rec(r,b,depth,prefix,prob,lbls){
+  function rec(counts,depth,prefix,prob,lbls){
     if(depth===k)return[[prefix,prob,lbls]];
-    const tot=r+b;const res=[];
-    if(r>0){
-      const p=r/tot;const id=nid++;
-      res.push(...rec(replace?r:r-1,b,depth+1,[...prefix,{label:'R',probStr:fmtFrac(r,tot),prob:p,overline:false,nodeId:id}],prob*p,[...lbls,'R']));
-    }
-    if(b>0){
-      const p=b/tot;const id=nid++;
-      res.push(...rec(r,replace?b:b-1,depth+1,[...prefix,{label:'B',probStr:fmtFrac(b,tot),prob:p,overline:false,nodeId:id}],prob*p,[...lbls,'B']));
-    }
+    const tot=counts.reduce((a,b)=>a+b,0);
+    const res=[];
+    counts.forEach((cnt,ci)=>{
+      if(cnt<=0)return;
+      const p=cnt/tot;const id=nid++;
+      const newCounts=replace?[...counts]:counts.map((v,i)=>i===ci?v-1:v);
+      res.push(...rec(newCounts,depth+1,[...prefix,{label:urnColors[ci].label,prob:p,overline:false,nodeId:id}],prob*p,[...lbls,urnColors[ci].label]));
+    });
     return res;
   }
-  return rec(R,B,0,[],1,[]);
+  const allPaths=rec(urnColors.map(c=>c.count),0,[],1,[]);
+  drawTreeFromPaths(allPaths,showProd,showSum);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -956,25 +648,35 @@ function drawTreeFromPaths(allPaths,showProd,showSum){
   const leafCount=allPaths.length;
   const depth=Math.max(...allPaths.map(([p])=>p.length));
 
-  const RH=54, CW=155, PX=50, PY=44;
-  const OMEGA_W=90, PROB_W=120;
-  const H=Math.max(280,leafCount*RH+PY*2);
-  const W=PX+(depth+1)*CW+(showProd?OMEGA_W+PROB_W+20:20);
+  // Gemeinsamen Nenner für alle Wahrscheinlichkeiten berechnen
+  const allEdgeProbs=[];
+  allPaths.forEach(([path])=>path.forEach(step=>allEdgeProbs.push(step.prob)));
+  const pathProbs=allPaths.map(([,prob])=>prob);
+  const D=commonDenominator([...allEdgeProbs,...pathProbs].filter(p=>p>0&&p<1&&isFinite(p)));
 
-  // Y-Positionen der Blätter (gleichmäßig verteilt)
+  function fmt(p){return fmtWithDenom(p,D);}
+
+  // Layout
+  const FS=18;        // Basis-Schriftgröße Knoten-Label
+  const FSP=15;       // Schriftgröße Wahrscheinlichkeit
+  const FSO=15;       // Schriftgröße Omega-Spalte
+  const RH=64;
+  const CW=170;
+  const PX=52;
+  const PY=48;
+  const OMEGA_W=100;
+  const PROB_W=130;
+  const H=Math.max(300,leafCount*RH+PY*2);
+  const W=PX+(depth+1)*CW+(showProd?OMEGA_W+PROB_W+20:30);
+
   const leafY=allPaths.map((_,i)=>PY+i*(H-PY*2)/Math.max(leafCount-1,1));
-
-  // Knotenposition: ID → {x,y}
-  // Wurzel (id=-1 oder depth=0 before first step)
   const nodePos=new Map();
   nodePos.set('ROOT',{x:PX,y:H/2});
 
-  // Für jeden Schritt entlang jedes Pfades Node-Y als Mittelwert der zugehörigen Blatt-Ys
   allPaths.forEach(([path],li)=>{
     path.forEach((step,d)=>{
       const key='n'+step.nodeId;
       if(!nodePos.has(key)){
-        // Alle Pfad-Indizes finden, die an Tiefe d denselben nodeId haben
         const idxs=allPaths.reduce((acc,[p],idx)=>{if(p[d]&&p[d].nodeId===step.nodeId)acc.push(idx);return acc;},[]);
         const y=idxs.reduce((a,i)=>a+leafY[i],0)/idxs.length;
         nodePos.set(key,{x:PX+(d+1)*CW,y});
@@ -982,69 +684,85 @@ function drawTreeFromPaths(allPaths,showProd,showSum){
     });
   });
 
-  // Kanten sammeln (dedupliziert)
   const edges=new Map();
   allPaths.forEach(([path])=>{
     path.forEach((step,d)=>{
       const fromKey=d===0?'ROOT':'n'+path[d-1].nodeId;
       const toKey='n'+step.nodeId;
       const ek=fromKey+'->'+toKey;
-      if(!edges.has(ek))edges.set(ek,{fromKey,toKey,label:step.label,probStr:step.probStr,overline:step.overline||false});
+      if(!edges.has(ek))edges.set(ek,{fromKey,toKey,label:step.label,prob:step.prob,overline:step.overline||false});
     });
   });
 
-  const omegaX=PX+depth*CW+38;
+  const omegaX=PX+depth*CW+42;
   const probX=omegaX+OMEGA_W;
+  const BGPAD=10; // Padding für weißes Hintergrundrechteck um Knoten-Label
 
   const parts=[];
   parts.push('<svg width="'+W+'" height="'+H+'" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">');
 
-  // Wurzel-Punkt
+  // Wurzel-Punkt (kleiner Kreis, kein Label)
   const root=nodePos.get('ROOT');
-  parts.push('<circle cx="'+root.x+'" cy="'+root.y+'" r="5" fill="#e94560" stroke="#fff" stroke-width="1.5"/>');
+  parts.push('<circle cx="'+root.x+'" cy="'+root.y+'" r="5" fill="#e94560"/>');
 
-  // Kanten + Zielknoten als Buchstabe
+  // Kanten + Zielknoten
   edges.forEach(e=>{
     const f=nodePos.get(e.fromKey),t=nodePos.get(e.toKey);if(!f||!t)return;
-    // Linie
-    parts.push('<line x1="'+f.x+'" y1="'+f.y+'" x2="'+t.x+'" y2="'+t.y+'" stroke="#1565c0" stroke-width="2"/>');
-    // Wahrscheinlichkeit: mittig über der Linie (senkrecht versetzt nach "oben")
+
+    // Gerade Linie
+    parts.push('<line x1="'+f.x+'" y1="'+f.y+'" x2="'+t.x+'" y2="'+t.y+'" stroke="#1565c0" stroke-width="2.5"/>');
+
+    // Wahrscheinlichkeit mittig über der Linie (senkrecht versetzt)
     const mx=(f.x+t.x)/2,my=(f.y+t.y)/2;
     const dx=t.x-f.x,dy=t.y-f.y,len=Math.sqrt(dx*dx+dy*dy)||1;
     const nx=-dy/len,ny=dx/len;
-    // Versatz immer in Richtung "oben" (negative y)
-    const sign=ny<0?1:-1; // wenn ny zeigt nach oben, in diese Richtung
-    const OFFSET=15;
-    const lx=mx+nx*OFFSET*sign*( dy<0?-1:1 );
-    const ly=my+ny*OFFSET*sign*( dy<0?-1:1 );
-    // Einfacher: immer 15px senkrecht zur Linie versetzt
-    const ox=-dy/len*15, oy=dx/len*15;
-    parts.push('<text x="'+(mx+ox)+'" y="'+(my+oy)+'" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#1a237e">'+escHtml(e.probStr)+'</text>');
-    // Zielknoten als Buchstabe (statt Kreis)
-    parts.push('<text x="'+t.x+'" y="'+t.y+'" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="bold" fill="#1565c0">'+svgLabel(e.label,e.overline)+'</text>');
+    const OFFSET=18;
+    // Immer nach "oben" versetzen (kleineres y)
+    const sign=(nx*0+ny*1)<0?1:-1; // ny<0 bedeutet nach oben
+    const ox=nx*OFFSET*(ny<=0?1:-1);
+    const oy=ny*OFFSET*(ny<=0?1:-1);
+    const px=mx+ox, py=my+oy;
+
+    // Weißes Hintergrund-Rect für Wahrscheinlichkeits-Label
+    const probStr=fmt(e.prob);
+    const pwApprox=probStr.length*FSP*0.62+8;
+    parts.push('<rect x="'+(px-pwApprox/2)+'" y="'+(py-FSP*0.7)+'" width="'+pwApprox+'" height="'+(FSP*1.4)+'" fill="white" rx="3"/>');
+    parts.push('<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSP+'" fill="#1a237e">'+escHtml(probStr)+'</text>');
+
+    // Zielknoten: weißes Rect + Buchstabe
+    const lblStr=e.overline?e.label:e.label; // wird via svgLabel gerendert
+    const lw=FS*1.1+BGPAD*2;
+    const lh=FS*1.3+BGPAD;
+    parts.push('<rect x="'+(t.x-lw/2)+'" y="'+(t.y-lh/2)+'" width="'+lw+'" height="'+lh+'" fill="white" rx="4" stroke="#dde" stroke-width="1"/>');
+    parts.push('<text x="'+t.x+'" y="'+t.y+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FS+'" font-weight="bold" fill="#1565c0">'+svgLabel(e.label,e.overline)+'</text>');
   });
 
-  // Omega + P(omega) Spalten
+  // Omega + P(omega)
   if(showProd){
-    // Überschriften
-    parts.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">ω</text>');
-    parts.push('<text x="'+(probX+PROB_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="13" font-weight="bold" fill="#2e7d32">P({ω})</text>');
-    // Trennlinien
-    parts.push('<line x1="'+(omegaX-6)+'" y1="'+(PY-30)+'" x2="'+(omegaX-6)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
-    parts.push('<line x1="'+(probX-4)+'" y1="'+(PY-30)+'" x2="'+(probX-4)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
+    parts.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+(PY-22)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#555">ω</text>');
+    parts.push('<text x="'+(probX+PROB_W/2)+'" y="'+(PY-22)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#2e7d32">P({ω})</text>');
+    parts.push('<line x1="'+(omegaX-6)+'" y1="'+(PY-32)+'" x2="'+(omegaX-6)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
+    parts.push('<line x1="'+(probX-4)+'" y1="'+(PY-32)+'" x2="'+(probX-4)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
   }
 
   let tot=0;
   allPaths.forEach(([path,prob,lbls],idx)=>{
     const ly=leafY[idx];tot+=prob;
     if(showProd){
-      parts.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-style="italic" fill="#333">'+escHtml(lbls.join(''))+'</text>');
-      parts.push('<text x="'+(probX+PROB_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="bold" fill="#2e7d32">'+fmtFrac2(prob)+'</text>');
+      const omegaLbl=lbls.join('');
+      parts.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSO+'" font-style="italic" fill="#333">'+escHtml(omegaLbl)+'</text>');
+      const pStr=fmt(prob);
+      parts.push('<text x="'+(probX+PROB_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSO+'" font-weight="bold" fill="#2e7d32">'+escHtml(pStr)+'</text>');
     }
   });
 
-  if(showSum)document.getElementById('tree-path-sum').textContent='Σ P({ω}) = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
-  else document.getElementById('tree-path-sum').textContent='';
+  if(showSum){
+    // Summe ebenfalls als Bruch
+    const sumStr=fmt(Math.round(tot*1e9)/1e9);
+    document.getElementById('tree-path-sum').textContent='Σ P({ω}) = '+sumStr+' ≈ '+tot.toFixed(6);
+  }else{
+    document.getElementById('tree-path-sum').textContent='';
+  }
 
   parts.push('</svg>');
   document.getElementById('tree-svg-wrap').innerHTML=parts.join('');
@@ -1052,19 +770,8 @@ function drawTreeFromPaths(allPaths,showProd,showSum){
 }
 
 // ── Tree Export ───────────────────────────────────────────
-function exportTreeSVG(){
-  const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));a.download='baumdiagramm.svg';a.click();
-}
-function exportTreePNG(){
-  const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}
-  const w=parseInt(svg.getAttribute('width'))||800,h=parseInt(svg.getAttribute('height'))||600;
-  const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;
-  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.scale(2,2);
-  const img=new Image();
-  img.onload=()=>{c.drawImage(img,0,0);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';a.click();};
-  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg.outerHTML)));
-}
+function exportTreeSVG(){const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));a.download='baumdiagramm.svg';a.click();}
+function exportTreePNG(){const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}const w=parseInt(svg.getAttribute('width'))||800,h=parseInt(svg.getAttribute('height'))||600;const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.scale(2,2);const img=new Image();img.onload=()=>{c.drawImage(img,0,0);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';a.click();};img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg.outerHTML)));}
 
 // ══════════════════════════════════════════════════════════
 // INIT
@@ -1078,6 +785,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   drawStab();
   drawHist();
   drawGraph();
+  renderUrnColors();
   renderLevelEditor();
   renderTree();
 });
