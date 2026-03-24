@@ -26,7 +26,7 @@ h1{text-align:center;color:#e94560;margin-bottom:18px;font-size:1.7rem;letter-sp
 .btn.op{color:#e94560;border-color:#e94560}.btn.fn{color:#4fc3f7;border-color:#4fc3f7}
 .btn.eq{background:#e94560;color:#fff;border-color:#e94560;font-size:1.1rem}.btn.eq:hover{background:#c0392b}
 .btn.clr{color:#ff8a65;border-color:#ff8a65}.btn.zero{grid-column:span 2}
-.panel{background:#16213e;border-radius:14px;padding:22px;max-width:900px;margin:0 auto;border:1px solid #253a5e}
+.panel{background:#16213e;border-radius:14px;padding:22px;max-width:1100px;margin:0 auto;border:1px solid #253a5e}
 .panel h2{color:#e94560;margin-bottom:14px;font-size:1.2rem}
 .form-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
 label{font-size:.9rem;color:#aaa}
@@ -44,7 +44,7 @@ input:focus{border-color:#e94560}
 .mk:hover{background:#4fc3f7;color:#000}.mk.op-k{color:#e94560;border-color:#e94560}.mk.op-k:hover{background:#e94560;color:#fff}
 .formula-input{width:100%;background:#0d0d1a;border:1px solid #4fc3f7;color:#fff;padding:10px 14px;border-radius:10px;font-size:1rem;outline:none;font-family:'Courier New',monospace}
 .formula-input:focus{border-color:#e94560}
-.result-box{background:#0d0d1a;border-radius:10px;padding:14px;margin-top:10px;border:1px solid #253a5e;max-height:260px;overflow-y:auto}
+.result-box{background:#0d0d1a;border-radius:10px;padding:14px;margin-top:10px;border:1px solid #253a5e;max-height:340px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:.88rem}
 th{color:#e94560;padding:6px 10px;border-bottom:1px solid #253a5e;text-align:left}
 td{padding:5px 10px;border-bottom:1px solid #1a2a4a;color:#ddd}
@@ -70,6 +70,16 @@ tr:hover td{background:#1a2a4a}
 .vis-btn.vb-omega{border-color:#888;color:#888}.vis-btn.vb-omega.active{background:#888;color:#fff}
 .vis-btn.vb-pomega{border-color:#2e7d32;color:#2e7d32}.vis-btn.vb-pomega.active{background:#2e7d32;color:#fff}
 .vis-btn.vb-sum{border-color:#a8e063;color:#a8e063}.vis-btn.vb-sum.active{background:#a8e063;color:#000}
+/* Wertetabelle: Zwei-Spalten-Layout */
+.wt-layout{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.wt-left{flex:0 0 auto;min-width:200px}
+.wt-right{flex:1 1 380px;min-width:320px}
+.wt-chart-wrap{position:relative;background:#fff;border-radius:10px;border:2px solid #aaa;overflow:hidden;height:360px;min-width:320px}
+.wt-chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.toggle-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.tog-btn{border:2px solid;padding:4px 12px;border-radius:14px;cursor:pointer;font-size:.82rem;background:transparent;transition:all .2s}
+.tog-btn.tb-pts{border-color:#1565c0;color:#1565c0}.tog-btn.tb-pts.active{background:#1565c0;color:#fff}
+.tog-btn.tb-graph{border-color:#e94560;color:#e94560}.tog-btn.tb-graph.active{background:#e94560;color:#fff}
 </style>
 </head>
 <body>
@@ -77,10 +87,10 @@ tr:hover td{background:#1a2a4a}
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('calc',this)">Rechner</button>
   <button class="tab-btn" onclick="showTab('table',this)">Wertetabelle</button>
+  <button class="tab-btn" onclick="showTab('graph',this)">Graphenplotter</button>
   <button class="tab-btn" onclick="showTab('binom',this)">Binomialverteilung</button>
   <button class="tab-btn" onclick="showTab('stab',this)">Stabdiagramm</button>
   <button class="tab-btn" onclick="showTab('hist',this)">Histogramm</button>
-  <button class="tab-btn" onclick="showTab('graph',this)">Graphenplotter</button>
   <button class="tab-btn" onclick="showTab('tree',this)">Baumdiagramm</button>
 </div>
 
@@ -147,13 +157,52 @@ tr:hover td{background:#1a2a4a}
     <label>bis x=</label><input type="number" id="wt-to" value="5" style="width:75px" oninput="buildTable()">
     <label>Schritt</label><input type="number" id="wt-step" value="1" step="0.1" style="width:75px" oninput="buildTable()">
   </div>
+  <div class="toggle-row">
+    <span style="color:#aaa;font-size:.83rem">Anzeigen:</span>
+    <button class="tog-btn tb-pts active" id="tog-pts" onclick="toggleWTLayer('pts')">● Punkte</button>
+    <button class="tog-btn tb-graph active" id="tog-graph" onclick="toggleWTLayer('graph')">— Graph</button>
+  </div>
   <p class="info">Erlaubt: + − * / ^ sin cos tan log ln sqrt exp abs pi e</p>
   <div id="wt-error"></div>
-  <div class="result-box" id="wt-result"></div>
+  <div class="wt-layout">
+    <div class="wt-left">
+      <div class="result-box" id="wt-result"></div>
+    </div>
+    <div class="wt-right">
+      <div class="wt-chart-wrap"><canvas id="wt-chart"></canvas></div>
+    </div>
+  </div>
   <div class="export-row">
     <button class="exp-btn exp-svg" onclick="exportTableCSV()">💾 CSV</button>
-    <button class="exp-btn exp-png" onclick="exportTablePNG()">🖼️ PNG</button>
+    <button class="exp-btn exp-png" onclick="exportTablePNG()">🖼️ PNG Tabelle</button>
+    <button class="exp-btn" style="background:#e94560;color:#fff" onclick="exportChartPNG('wt-chart','wertetabelle_graph')">🖼️ PNG Graph</button>
   </div>
+</div></div>
+
+<!-- GRAPHENPLOTTER -->
+<div id="tab-graph" class="tab-content">
+<div class="panel">
+  <h2>📉 Graphenplotter</h2>
+  <div class="mini-kbd" id="graph-kbd"></div>
+  <div id="graph-funcs">
+    <div class="form-row graph-func-row" data-id="0">
+      <label>f₁(x) =</label>
+      <input type="text" class="graph-expr" id="graph-expr-0" value="x^3 - 2*x + 1" style="width:240px" oninput="drawGraph()">
+      <input type="color" class="graph-color" value="#e94560" oninput="drawGraph()">
+    </div>
+  </div>
+  <div class="form-row">
+    <button class="action-btn" onclick="addGraphFunc()" style="background:#4fc3f7">+ Funktion</button>
+    <button class="action-btn" onclick="removeGraphFunc()" style="background:#555">− Funktion</button>
+  </div>
+  <div class="form-row">
+    <label>x von</label><input type="number" id="graph-xmin" value="-5" style="width:70px" oninput="drawGraph()">
+    <label>bis</label><input type="number" id="graph-xmax" value="5" style="width:70px" oninput="drawGraph()">
+    <label>Punkte</label><input type="number" id="graph-pts" value="600" min="50" max="2000" style="width:80px" oninput="drawGraph()">
+  </div>
+  <p class="info">Ganzrationale: x^3+2*x−1 | Exponential: exp(x) | Trig: sin(x)</p>
+  <div class="chart-container"><canvas id="graph-chart"></canvas></div>
+  <div class="export-row"><button class="exp-btn exp-png" onclick="exportChartPNG('graph-chart','graphenplotter')">🖼️ PNG</button></div>
 </div></div>
 
 <!-- BINOMIALVERTEILUNG -->
@@ -162,7 +211,7 @@ tr:hover td{background:#1a2a4a}
   <h2>🎲 Binomialverteilung B(n, p)</h2>
   <div class="form-row">
     <label>n =</label><input type="number" id="bn-n" value="10" min="1" max="300" style="width:75px" oninput="binomLive()">
-    <label>p =</label><input type="number" id="bn-p" value="0.5" min="0" max="1" step="0.01" style="width:85px" oninput="binomLive()">
+    <label>p =</label><input type="number" id="bn-p" value="0,5" min="0" max="1" step="0.01" style="width:85px" oninput="binomLive()">
   </div>
   <div class="form-row">
     <label style="color:#f9a825">P(X = k): k =</label>
@@ -200,12 +249,12 @@ tr:hover td{background:#1a2a4a}
   <div class="form-row">
     <label>Variablenname:</label>
     <input type="text" id="stab-varname" value="X" style="width:55px" oninput="drawStab()" placeholder="X">
-    <label style="margin-left:8px">Werte (kommagetrennt):</label>
-    <input type="text" id="stab-x" value="1, 2, 3, 4, 5" style="width:260px" oninput="drawStab()">
+    <label style="margin-left:8px">Werte (semikolongetrennt):</label>
+    <input type="text" id="stab-x" value="1; 2; 3; 4; 5" style="width:260px" oninput="drawStab()">
   </div>
   <div class="form-row">
-    <label>Wahrscheinlichkeiten:</label>
-    <input type="text" id="stab-p" value="0.1, 0.2, 0.4, 0.2, 0.1" style="width:320px" oninput="drawStab()">
+    <label>Wahrscheinlichkeiten (semikolongetrennt):</label>
+    <input type="text" id="stab-p" value="0,1; 0,2; 0,4; 0,2; 0,1" style="width:320px" oninput="drawStab()">
   </div>
   <div id="stab-error"></div>
   <div id="stab-stats" class="result-box" style="display:none"></div>
@@ -220,10 +269,12 @@ tr:hover td{background:#1a2a4a}
 <div class="panel">
   <h2>📈 Histogramm</h2>
   <div class="form-row">
-    <label>Klassengrenzen:</label><input type="text" id="hist-bounds" value="0, 10, 20, 40, 50" style="width:300px" oninput="drawHist()">
+    <label>Klassengrenzen (semikolongetrennt):</label>
+    <input type="text" id="hist-bounds" value="0; 10; 20; 40; 50" style="width:300px" oninput="drawHist()">
   </div>
   <div class="form-row">
-    <label>Häufigkeiten h:</label><input type="text" id="hist-freq" value="5, 15, 20, 10" style="width:300px" oninput="drawHist()">
+    <label>Häufigkeiten h (semikolongetrennt):</label>
+    <input type="text" id="hist-freq" value="5; 15; 20; 10" style="width:300px" oninput="drawHist()">
   </div>
   <div id="hist-error"></div>
   <div id="hist-result" class="result-box" style="display:none"></div>
@@ -232,32 +283,6 @@ tr:hover td{background:#1a2a4a}
     <button class="exp-btn exp-png" onclick="exportChartPNG('hist-chart','histogramm')">🖼️ PNG</button>
     <button class="exp-btn" style="background:#f9a825;color:#000" onclick="exportHistCSV()">📊 CSV</button>
   </div>
-</div></div>
-
-<!-- GRAPHENPLOTTER -->
-<div id="tab-graph" class="tab-content">
-<div class="panel">
-  <h2>📉 Graphenplotter</h2>
-  <div class="mini-kbd" id="graph-kbd"></div>
-  <div id="graph-funcs">
-    <div class="form-row graph-func-row" data-id="0">
-      <label>f₁(x) =</label>
-      <input type="text" class="graph-expr" id="graph-expr-0" value="x^3 - 2*x + 1" style="width:240px" oninput="drawGraph()">
-      <input type="color" class="graph-color" value="#e94560" oninput="drawGraph()">
-    </div>
-  </div>
-  <div class="form-row">
-    <button class="action-btn" onclick="addGraphFunc()" style="background:#4fc3f7">+ Funktion</button>
-    <button class="action-btn" onclick="removeGraphFunc()" style="background:#555">− Funktion</button>
-  </div>
-  <div class="form-row">
-    <label>x von</label><input type="number" id="graph-xmin" value="-5" style="width:70px" oninput="drawGraph()">
-    <label>bis</label><input type="number" id="graph-xmax" value="5" style="width:70px" oninput="drawGraph()">
-    <label>Punkte</label><input type="number" id="graph-pts" value="600" min="50" max="2000" style="width:80px" oninput="drawGraph()">
-  </div>
-  <p class="info">Ganzrationale: x^3+2*x−1 | Exponential: exp(x) | Trig: sin(x)</p>
-  <div class="chart-container"><canvas id="graph-chart"></canvas></div>
-  <div class="export-row"><button class="exp-btn exp-png" onclick="exportChartPNG('graph-chart','graphenplotter')">🖼️ PNG</button></div>
 </div></div>
 
 <!-- BAUMDIAGRAMM -->
@@ -269,8 +294,6 @@ tr:hover td{background:#1a2a4a}
     <button class="tree-mode-btn tm-binom" id="tree-mode-binom" onclick="setTreeMode('binom')">🎲 Binomialverteilt</button>
     <button class="tree-mode-btn tm-urn" id="tree-mode-urn" onclick="setTreeMode('urn')">⚱️ Urnenmodell</button>
   </div>
-
-  <!-- MANUELL -->
   <div id="tree-panel-manual">
     <div style="margin-bottom:10px">
       <div style="color:#aaa;font-size:.8rem;margin-bottom:5px">Einblenden:</div>
@@ -297,8 +320,6 @@ tr:hover td{background:#1a2a4a}
     <div id="tree-level-editor" style="margin-top:12px"></div>
     <div id="tree-manual-error" style="margin-top:6px"></div>
   </div>
-
-  <!-- BINOMIAL -->
   <div id="tree-panel-binom" style="display:none">
     <div class="form-row">
       <label>Stufen n=</label><input type="number" id="tb-n" value="3" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
@@ -306,22 +327,11 @@ tr:hover td{background:#1a2a4a}
       <label>Treffer:</label><input type="text" id="tb-hit" value="T" style="width:55px" oninput="buildAutoTree()">
     </div>
     <div class="form-row">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="tb-show-prob" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">p an Ästen</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
-        <input type="checkbox" id="tb-show-prod" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">P({ωᵢ})</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
-        <input type="checkbox" id="tb-show-sum" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">Summe</span>
-      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="tb-show-prob" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">p an Ästen</span></label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px"><input type="checkbox" id="tb-show-prod" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">P({ωᵢ})</span></label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px"><input type="checkbox" id="tb-show-sum" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">Summe</span></label>
     </div>
   </div>
-
-  <!-- URNE -->
   <div id="tree-panel-urn" style="display:none">
     <div id="urn-colors-wrap" style="margin-bottom:8px"></div>
     <div class="form-row">
@@ -330,28 +340,15 @@ tr:hover td{background:#1a2a4a}
     </div>
     <div class="form-row">
       <label>Züge k=</label><input type="number" id="tu-k" value="2" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:6px">
-        <input type="checkbox" id="tu-replace" onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">Mit Zurücklegen</span>
-      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:6px"><input type="checkbox" id="tu-replace" onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">Mit Zurücklegen</span></label>
     </div>
     <div class="form-row">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" id="tu-show-prob" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">p an Ästen</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
-        <input type="checkbox" id="tu-show-prod" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">P({ωᵢ})</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
-        <input type="checkbox" id="tu-show-sum" checked onchange="buildAutoTree()">
-        <span style="color:#eee;font-size:.88rem">Summe</span>
-      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="tu-show-prob" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">p an Ästen</span></label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px"><input type="checkbox" id="tu-show-prod" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">P({ωᵢ})</span></label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px"><input type="checkbox" id="tu-show-sum" checked onchange="buildAutoTree()"><span style="color:#eee;font-size:.88rem">Summe</span></label>
     </div>
     <div id="tu-error"></div>
   </div>
-
   <div id="tree-svg-wrap" style="margin-top:16px;background:#fff;border-radius:10px;border:2px solid #aaa;overflow-x:auto;min-height:180px"></div>
   <div id="tree-path-sum" style="margin-top:8px;font-size:.95rem;color:#a8e063;font-weight:600"></div>
   <div class="export-row">
@@ -362,6 +359,31 @@ tr:hover td{background:#1a2a4a}
 
 <script>
 // ══════════════════════════════════════════════
+// ZAHLENFORMATIERUNG: Punkt→Komma für Anzeige
+// ══════════════════════════════════════════════
+// Intern rechnen wir immer mit JS-Floats (Punkt).
+// Für die Anzeige ersetzen wir den Punkt durch Komma.
+function de(v){
+  // v kann Zahl oder String sein
+  if(typeof v==='number'){
+    if(!isFinite(v))return'Fehler';
+    return String(parseFloat(v.toPrecision(12))).replace('.',',');
+  }
+  return String(v).replace(/\./g,',');
+}
+// Parse deutsche Kommazahl → float
+function parseDE(s){
+  if(typeof s!=='string')return parseFloat(s);
+  return parseFloat(s.replace(',','.'));
+}
+// Für Achsen-Ticks: kompaktes Kommaformat
+function fmtDE(v){
+  if(Math.abs(v)<1e-10)return'0';
+  if(Math.abs(v)>=10000||Math.abs(v)<0.001)return de(parseFloat(v.toExponential(1)));
+  return de(parseFloat(v.toPrecision(5)));
+}
+
+// ══════════════════════════════════════════════
 // ALLGEMEIN
 // ══════════════════════════════════════════════
 function showTab(n,b){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');if(b)b.classList.add('active');}
@@ -371,16 +393,20 @@ const toRad=v=>angleMode==='DEG'?v*Math.PI/180:v;
 const toDeg=v=>angleMode==='DEG'?v*180/Math.PI:v;
 function safeEval(expr){let e=expr.replace(/\^/g,'**').replace(/\bpi\b/g,'Math.PI').replace(/\be\b/g,'Math.E').replace(/\bsin\(/g,'_sin(').replace(/\bcos\(/g,'_cos(').replace(/\btan\(/g,'_tan(').replace(/\basin\(/g,'_asin(').replace(/\bacos\(/g,'_acos(').replace(/\batan\(/g,'_atan(').replace(/\blog\(/g,'Math.log10(').replace(/\bln\(/g,'Math.log(').replace(/\bsqrt\(/g,'Math.sqrt(').replace(/\bexp\(/g,'Math.exp(').replace(/\babs\(/g,'Math.abs(');const _sin=v=>Math.sin(toRad(v)),_cos=v=>Math.cos(toRad(v)),_tan=v=>Math.tan(toRad(v));const _asin=v=>toDeg(Math.asin(v)),_acos=v=>toDeg(Math.acos(v)),_atan=v=>toDeg(Math.atan(v));return Function('"use strict";const _sin=arguments[0],_cos=arguments[1],_tan=arguments[2],_asin=arguments[3],_acos=arguments[4],_atan=arguments[5];return '+e)(_sin,_cos,_tan,_asin,_acos,_atan);}
 function safeEvalX(e,x){return safeEval(e.replace(/\bx\b/g,'('+x+')'));}
-function roundDisp(v){return isFinite(v)?String(parseFloat(v.toPrecision(12))):'Fehler';}
+function roundDisp(v){return isFinite(v)?parseFloat(v.toPrecision(12)):NaN;}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmtNum(v){if(Math.abs(v)<1e-10)return'0';if(Math.abs(v)>=10000||Math.abs(v)<0.001)return v.toExponential(1);return String(parseFloat(v.toPrecision(5)));}
+
+// Semikolon-getrennte Listen parsen (mit Komma als Dezimaltrennzeichen)
+function parseSemiList(s){return s.split(';').map(t=>parseDE(t.trim()));}
+function parseSemiListStr(s){return s.split(';').map(t=>t.trim());}
+
 const MKB=[{l:'sin()',i:'sin('},{l:'cos()',i:'cos('},{l:'tan()',i:'tan('},{l:'ln()',i:'ln('},{l:'log()',i:'log('},{l:'√()',i:'sqrt('},{l:'eˣ',i:'exp('},{l:'xʸ',i:'^'},{l:'|x|',i:'abs('},{l:'π',i:'pi'},{l:'e',i:'e'},{l:'(',i:'('},{l:')',i:')'},{l:'1/x',i:'1/('},{l:'+',i:'+',c:'op-k'},{l:'−',i:'-',c:'op-k'},{l:'×',i:'*',c:'op-k'},{l:'÷',i:'/',c:'op-k'},{l:'⌫',i:'__back__',c:'op-k'}];
 function buildMiniKbd(cid,getInp){const w=document.getElementById(cid);if(!w)return;w.innerHTML='';MKB.forEach(b=>{const btn=document.createElement('button');btn.className='mk'+(b.c?' '+b.c:'');btn.textContent=b.l;btn.type='button';btn.addEventListener('mousedown',ev=>{ev.preventDefault();const inp=getInp();if(!inp)return;inp.focus();const s=inp.selectionStart,en=inp.selectionEnd;if(b.i==='__back__'){if(s===en&&s>0){inp.value=inp.value.slice(0,s-1)+inp.value.slice(en);inp.setSelectionRange(s-1,s-1);}else{inp.value=inp.value.slice(0,s)+inp.value.slice(en);inp.setSelectionRange(s,s);}}else{inp.value=inp.value.slice(0,s)+b.i+inp.value.slice(en);inp.setSelectionRange(s+b.i.length,s+b.i.length);}inp.dispatchEvent(new Event('input'));});w.appendChild(btn);});}
 let lastGraphInput=null;
 document.addEventListener('focusin',e=>{if(e.target.classList.contains('graph-expr'))lastGraphInput=e.target;});
 
 // ══════════════════════════════════════════════
-// CHART PNG EXPORT
+// PNG EXPORT (Chart.js Canvas)
 // ══════════════════════════════════════════════
 function exportChartPNG(cid,fname){
   const cv=document.getElementById(cid);if(!cv){alert('Kein Diagramm.');return;}
@@ -391,9 +417,11 @@ function exportChartPNG(cid,fname){
 }
 
 // ══════════════════════════════════════════════
-// GRID + ARROW PLUGIN (große Ticks)
+// GRID + ARROW PLUGIN (Komma-Ticks)
 // ══════════════════════════════════════════════
 const TICK_FONT=15;
+const CPAD={right:52,top:36,left:20,bottom:48};
+
 function makeGridPlugin(){
   return{id:'gp_'+Math.random().toString(36).slice(2),beforeDraw(chart){
     const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
@@ -411,7 +439,6 @@ function makeGridPlugin(){
   }};
 }
 
-// xTicksCustom: [{val, label}] – wenn angegeben, werden diese Ticks gezeichnet
 function makeArrowPlugin(xLbl,yLbl,xTicksCustom){
   return{id:'ap_'+Math.random().toString(36).slice(2),afterDraw(chart){
     const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
@@ -429,8 +456,7 @@ function makeArrowPlugin(xLbl,yLbl,xTicksCustom){
     ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+3,xY-aW);
     ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);
     ctx.font=TICK_FONT+'px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;
-    const MARGIN=30,BC=24;
-    // X-Ticks
+    const MARGIN=30,BC=26;
     if(xTicksCustom&&xTicksCustom.length){
       xTicksCustom.forEach(t=>{
         const px=scales.x.getPixelForValue(t.val);
@@ -450,10 +476,9 @@ function makeArrowPlugin(xLbl,yLbl,xTicksCustom){
         if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)continue;
         ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();
         if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)continue;
-        ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(fmtNum(v),px,Math.min(xY+8,bottom-BC));
+        ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(fmtDE(v),px,Math.min(xY+8,bottom-BC));
       }
     }
-    // Y-Ticks
     const rangeY=scales.y.max-scales.y.min;
     const magY=Math.pow(10,Math.floor(Math.log10(rangeY/5)));let stepY=magY;
     for(const c of[1,2,2.5,5,10])if(c*magY*4>=rangeY){stepY=c*magY;break;}
@@ -464,209 +489,138 @@ function makeArrowPlugin(xLbl,yLbl,xTicksCustom){
       if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)continue;
       ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();
       if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)continue;
-      ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(fmtNum(v),yX-8,py);
+      ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(fmtDE(v),yX-8,py);
     }
     ctx.restore();
   }};
 }
 function makeScales(xMin,xMax,yMin,yMax){return{x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false}},y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false}}};}
-const CPAD={right:52,top:36,left:20,bottom:44};
 
 // ══════════════════════════════════════════════
-// CSV/PNG EXPORTS
+// EXPORTS CSV
 // ══════════════════════════════════════════════
-function exportTableCSV(){const expr=document.getElementById('wt-func').value.trim();const from=parseFloat(document.getElementById('wt-from').value);const to=parseFloat(document.getElementById('wt-to').value);const step=parseFloat(document.getElementById('wt-step').value);if(!expr||isNaN(from)||isNaN(to)||isNaN(step)||step<=0||from>to)return;let csv='x;f(x)\n';for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}csv+=x+';'+fx+'\n';}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wertetabelle.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
-function exportTablePNG(){const res=document.getElementById('wt-result');if(!res||!res.innerHTML){alert('Keine Tabelle.');return;}const rows=[...res.querySelectorAll('tr')];if(!rows.length)return;const cols=rows[0].querySelectorAll('th,td').length;const CW=140,RH=28,PAD=16,W=cols*CW+PAD*2,H=rows.length*RH+PAD*2;const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const c=cv.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,W,H);rows.forEach((row,ri)=>{[...row.querySelectorAll('th,td')].forEach((cell,ci)=>{const x=PAD+ci*CW,y=PAD+ri*RH;c.fillStyle=ri===0?'#e94560':ri%2===0?'#f5f5f5':'#fff';c.fillRect(x,y,CW,RH);c.strokeStyle='#ddd';c.lineWidth=.5;c.strokeRect(x,y,CW,RH);c.fillStyle=ri===0?'#fff':'#222';c.font=ri===0?'bold 13px Segoe UI':'13px Segoe UI';c.textBaseline='middle';c.textAlign='center';c.fillText(cell.textContent,x+CW/2,y+RH/2);});});const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='wertetabelle.png';document.body.appendChild(a);a.click();document.body.removeChild(a);}
-function exportBinomCSV(){const n=parseInt(document.getElementById('bn-n').value);const p=parseFloat(document.getElementById('bn-p').value);if(isNaN(n)||isNaN(p))return;let csv='k;P(X=k);P(X<=k)\n';for(let k=0;k<=n;k++)csv+=k+';'+binomPDF(n,p,k).toFixed(8)+';'+binomCDF(n,p,k).toFixed(8)+'\n';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='binom.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
-function exportHistCSV(){const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));if(bounds.length!==freqs.length+1)return;const total=freqs.reduce((a,b)=>a+b,0);let csv='von;bis;Breite;h;rel.h;Dichte\n';freqs.forEach((_,i)=>{const w=bounds[i+1]-bounds[i];csv+=bounds[i]+';'+bounds[i+1]+';'+w+';'+freqs[i]+';'+(freqs[i]/total).toFixed(6)+';'+(freqs[i]/w).toFixed(6)+'\n';});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function exportTableCSV(){
+  const expr=document.getElementById('wt-func').value.trim();
+  const from=parseFloat(document.getElementById('wt-from').value);
+  const to=parseFloat(document.getElementById('wt-to').value);
+  const step=parseFloat(document.getElementById('wt-step').value);
+  if(!expr||isNaN(from)||isNaN(to)||isNaN(step)||step<=0||from>to)return;
+  let csv='x;f(x)\n';
+  for(let x=from;x<=to+1e-9;x+=step){
+    x=Math.round(x*1e10)/1e10;
+    let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?de(roundDisp(fx)):'—';}catch(e){fx='Fehler';}
+    csv+=de(x)+';'+fx+'\n';
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wertetabelle.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function exportTablePNG(){
+  const res=document.getElementById('wt-result');if(!res||!res.innerHTML){alert('Keine Tabelle.');return;}
+  const rows=[...res.querySelectorAll('tr')];if(!rows.length)return;
+  const cols=rows[0].querySelectorAll('th,td').length;
+  const CW=140,RH=28,PAD=16,W=cols*CW+PAD*2,H=rows.length*RH+PAD*2;
+  const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;
+  const c=cv.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  rows.forEach((row,ri)=>{[...row.querySelectorAll('th,td')].forEach((cell,ci)=>{
+    const x=PAD+ci*CW,y=PAD+ri*RH;
+    c.fillStyle=ri===0?'#e94560':ri%2===0?'#f5f5f5':'#fff';c.fillRect(x,y,CW,RH);
+    c.strokeStyle='#ddd';c.lineWidth=.5;c.strokeRect(x,y,CW,RH);
+    c.fillStyle=ri===0?'#fff':'#222';c.font=ri===0?'bold 13px Segoe UI':'13px Segoe UI';
+    c.textBaseline='middle';c.textAlign='center';c.fillText(cell.textContent,x+CW/2,y+RH/2);
+  });});
+  const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='wertetabelle.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function exportBinomCSV(){
+  const n=parseInt(document.getElementById('bn-n').value);
+  const p=parseDE(document.getElementById('bn-p').value);
+  if(isNaN(n)||isNaN(p))return;
+  let csv='k;P(X=k);P(X<=k)\n';
+  for(let k=0;k<=n;k++)csv+=k+';'+de(binomPDF(n,p,k))+';'+de(binomCDF(n,p,k))+'\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='binom.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function exportHistCSV(){
+  const bounds=parseSemiList(document.getElementById('hist-bounds').value);
+  const freqs=parseSemiList(document.getElementById('hist-freq').value);
+  if(bounds.length!==freqs.length+1)return;
+  const total=freqs.reduce((a,b)=>a+b,0);
+  let csv='von;bis;Breite;h;rel.h;Dichte\n';
+  freqs.forEach((_,i)=>{const w=bounds[i+1]-bounds[i];csv+=de(bounds[i])+';'+de(bounds[i+1])+';'+de(w)+';'+de(freqs[i])+';'+de(freqs[i]/total)+';'+de(freqs[i]/w)+'\n';});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
 
 // ══════════════════════════════════════════════
 // TASCHENRECHNER
 // ══════════════════════════════════════════════
 let calcExpr='',justEvaled=false;
 function updateDisplay(){document.getElementById('expr-display').textContent=calcExpr;}
-function updateMain(v){document.getElementById('main-display').textContent=v;}
-function calcInput(ch){if(justEvaled&&/^[\d.]$/.test(ch))calcExpr='';justEvaled=false;calcExpr+=ch;updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(roundDisp(v));}catch(e){}}
-function calcEval(){if(!calcExpr)return;try{let v=safeEval(calcExpr);updateMain(isFinite(v)?roundDisp(v):'Fehler');document.getElementById('expr-display').textContent=calcExpr+' =';calcExpr=String(isFinite(v)?roundDisp(v):'');justEvaled=true;}catch(e){updateMain('Fehler');}}
-function calcClear(){calcExpr='';updateDisplay();updateMain('0');justEvaled=false;}
-function calcBack(){calcExpr=calcExpr.slice(0,-1);updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(roundDisp(v));}catch(e){}}
+function updateMain(v){document.getElementById('main-display').textContent=typeof v==='number'?de(v):v;}
+function calcInput(ch){if(justEvaled&&/^[\d.]$/.test(ch))calcExpr='';justEvaled=false;calcExpr+=ch;updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(v);}catch(e){}}
+function calcEval(){if(!calcExpr)return;try{let v=safeEval(calcExpr);updateMain(isFinite(v)?v:'Fehler');document.getElementById('expr-display').textContent=calcExpr+' =';calcExpr=isFinite(v)?String(v):'';justEvaled=true;}catch(e){updateMain('Fehler');}}
+function calcClear(){calcExpr='';updateDisplay();updateMain(0);justEvaled=false;}
+function calcBack(){calcExpr=calcExpr.slice(0,-1);updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(v);}catch(e){}}
 function calcNeg(){if(calcExpr){calcExpr='-('+calcExpr+')';updateDisplay();}}
-document.addEventListener('keydown',e=>{if(!document.getElementById('tab-calc').classList.contains('active'))return;if(e.key>='0'&&e.key<='9')calcInput(e.key);else if(e.key==='.')calcInput('.');else if(e.key==='+')calcInput('+');else if(e.key==='-')calcInput('-');else if(e.key==='*')calcInput('*');else if(e.key==='/'){ e.preventDefault();calcInput('/');}else if(e.key==='(')calcInput('(');else if(e.key===')')calcInput(')');else if(e.key==='^')calcInput('^');else if(e.key==='%')calcInput('%');else if(e.key==='Enter'||e.key==='=')calcEval();else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();});
+document.addEventListener('keydown',e=>{if(!document.getElementById('tab-calc').classList.contains('active'))return;if(e.key>='0'&&e.key<='9')calcInput(e.key);else if(e.key==='.')calcInput('.');else if(e.key===',')calcInput('.');else if(e.key==='+')calcInput('+');else if(e.key==='-')calcInput('-');else if(e.key==='*')calcInput('*');else if(e.key==='/'){ e.preventDefault();calcInput('/');}else if(e.key==='(')calcInput('(');else if(e.key===')')calcInput(')');else if(e.key==='^')calcInput('^');else if(e.key==='%')calcInput('%');else if(e.key==='Enter'||e.key==='=')calcEval();else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();});
 
 // ══════════════════════════════════════════════
-// WERTETABELLE
+// WERTETABELLE + KOORDINATENSYSTEM
 // ══════════════════════════════════════════════
-function buildTable(){const expr=document.getElementById('wt-func').value.trim();const from=parseFloat(document.getElementById('wt-from').value);const to=parseFloat(document.getElementById('wt-to').value);const step=parseFloat(document.getElementById('wt-step').value);const errEl=document.getElementById('wt-error');const res=document.getElementById('wt-result');errEl.innerHTML='';res.innerHTML='';if(!expr){errEl.innerHTML='<div class="error-msg">⚠ Funktion eingeben.</div>';return;}if(isNaN(from)||isNaN(to)||from>to){errEl.innerHTML='<div class="error-msg">⚠ Ungültiger x-Bereich.</div>';return;}if(isNaN(step)||step<=0){errEl.innerHTML='<div class="error-msg">⚠ Schrittweite > 0.</div>';return;}let html='<table><tr><th>x</th><th>f(x) = '+escHtml(expr)+'</th></tr>';for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}html+='<tr><td>'+x+'</td><td>'+fx+'</td></tr>';}res.innerHTML=html+'</table>';}
-
-// ══════════════════════════════════════════════
-// BINOMIALVERTEILUNG – lückenlose Säulen
-// ══════════════════════════════════════════════
-function binom(n,k){if(k<0||k>n)return 0;if(k===0||k===n)return 1;if(k>n-k)k=n-k;let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;}
-function binomPDF(n,p,k){return binom(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);}
-function binomCDF(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binomPDF(n,p,i);return s;}
-let binomChartInst=null,currentHL='eq';
-function setHL(m){currentHL=m;['eq','le','rng','none'].forEach(x=>{const b=document.getElementById('hl-'+x);if(b)b.classList.toggle('active',x===m);});}
-function binomLive(){
-  const n=parseInt(document.getElementById('bn-n').value);
-  const p=parseFloat(document.getElementById('bn-p').value);
-  const kEq=parseInt(document.getElementById('bn-k-eq').value);
-  const kLe=parseInt(document.getElementById('bn-k-le').value);
-  const k1=parseInt(document.getElementById('bn-k1').value);
-  const k2=parseInt(document.getElementById('bn-k2').value);
-  const res=document.getElementById('binom-result');
-  if(isNaN(n)||isNaN(p)||p<0||p>1||n<1){res.innerHTML='<div class="error-msg">⚠ n≥1, 0≤p≤1</div>';return;}
-  const pEq=isNaN(kEq)?'—':binomPDF(n,p,kEq).toFixed(8);
-  const pLe=isNaN(kLe)?'—':binomCDF(n,p,kLe).toFixed(8);
-  let pRng='—';if(!isNaN(k1)&&!isNaN(k2)&&k1<=k2){let s=0;for(let i=k1;i<=k2;i++)s+=binomPDF(n,p,i);pRng=s.toFixed(8);}
-  let html='<table><tr><th>Abfrage</th><th>Ergebnis</th></tr><tr><td style="color:#f9a825">P(X='+kEq+')</td><td>'+pEq+'</td></tr><tr><td style="color:#4fc3f7">P(X≤'+kLe+')</td><td>'+pLe+'</td></tr><tr><td style="color:#a8e063">P('+k1+'≤X≤'+k2+')</td><td>'+pRng+'</td></tr><tr><th>k</th><th>P(X=k)</th></tr>';
-  for(let k=0;k<=n;k++)html+='<tr><td>'+k+'</td><td>'+binomPDF(n,p,k).toFixed(6)+'</td></tr>';
-  res.innerHTML=html+'</table>';
-  const data=[];for(let k=0;k<=n;k++)data.push({x:k,y:parseFloat(binomPDF(n,p,k).toFixed(10))});
-  const maxP=Math.max(...data.map(d=>d.y));
-  function bCol(k){if(currentHL==='eq')return k===kEq?'rgba(249,168,37,.9)':'rgba(180,180,180,.45)';if(currentHL==='le')return k<=kLe?'rgba(79,195,247,.9)':'rgba(180,180,180,.45)';if(currentHL==='rng')return(k>=k1&&k<=k2)?'rgba(168,224,99,.9)':'rgba(180,180,180,.45)';return'rgba(233,69,96,.75)';}
-  function bStr(k){if(currentHL==='eq')return k===kEq?'#f57f17':'#888';if(currentHL==='le')return k<=kLe?'#0277bd':'#888';if(currentHL==='rng')return(k>=k1&&k<=k2)?'#558b2f':'#888';return'#c0392b';}
-  if(binomChartInst)binomChartInst.destroy();
-  const gp=makeGridPlugin();
-  const xTicks=[];for(let k=0;k<=n;k++)xTicks.push({val:k,label:k});
-  const ap=makeArrowPlugin('k','P(X=k)',xTicks);
-  // Lückenlose Säulen: Breite = exakt 1 Einheit auf der Achse
-  const bbp={id:'bb_'+Math.random().toString(36).slice(2),afterDraw(ch){
-    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-    // Lückenlos: linke Kante bei k-0.5, rechte bei k+0.5
-    c.save();
-    data.forEach(pt=>{
-      const x1=xA.getPixelForValue(pt.x-0.5);
-      const x2=xA.getPixelForValue(pt.x+0.5);
-      const py=yA.getPixelForValue(pt.y);
-      c.fillStyle=bCol(pt.x);
-      c.strokeStyle=bStr(pt.x);
-      c.lineWidth=1;
-      c.fillRect(x1,py,x2-x1,y0-py);
-      c.strokeRect(x1,py,x2-x1,y0-py);
-    });
-    c.restore();
-  }};
-  binomChartInst=new Chart(document.getElementById('binom-chart'),{
-    type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.25)},
-    plugins:[gp,ap,bbp]
-  });
+let wtChartInst=null;
+let wtShowPts=true,wtShowGraph=true;
+function toggleWTLayer(which){
+  if(which==='pts'){wtShowPts=!wtShowPts;document.getElementById('tog-pts').classList.toggle('active',wtShowPts);}
+  else{wtShowGraph=!wtShowGraph;document.getElementById('tog-graph').classList.toggle('active',wtShowGraph);}
+  buildTable();
 }
+function buildTable(){
+  const expr=document.getElementById('wt-func').value.trim();
+  const from=parseFloat(document.getElementById('wt-from').value);
+  const to=parseFloat(document.getElementById('wt-to').value);
+  const step=parseFloat(document.getElementById('wt-step').value);
+  const errEl=document.getElementById('wt-error');const res=document.getElementById('wt-result');
+  errEl.innerHTML='';res.innerHTML='';
+  if(!expr){errEl.innerHTML='<div class="error-msg">⚠ Funktion eingeben.</div>';return;}
+  if(isNaN(from)||isNaN(to)||from>to){errEl.innerHTML='<div class="error-msg">⚠ Ungültiger x-Bereich.</div>';return;}
+  if(isNaN(step)||step<=0){errEl.innerHTML='<div class="error-msg">⚠ Schrittweite > 0.</div>';return;}
 
-// ══════════════════════════════════════════════
-// STABDIAGRAMM – echte numerische x-Positionen
-// ══════════════════════════════════════════════
-let stabChartInst=null;
-function drawStab(){
-  const varRaw=(document.getElementById('stab-varname').value||'X').trim();
-  const varUp=varRaw.toUpperCase();
-  const varLow=varRaw.toLowerCase();
-  const xRaw=document.getElementById('stab-x').value.split(',').map(s=>s.trim());
-  const ps=document.getElementById('stab-p').value.split(',').map(s=>parseFloat(s.trim()));
-  const errEl=document.getElementById('stab-error');
-  const statsEl=document.getElementById('stab-stats');
-  errEl.innerHTML='';
-  const errs=[];
-  if(ps.some(isNaN))errs.push('⚠ Ungültige Wahrscheinlichkeiten.');
-  if(xRaw.length!==ps.length)errs.push('⚠ Anzahl Werte ≠ Anzahl P.');
-  if(ps.some(v=>v<0))errs.push('⚠ Negative Wahrscheinlichkeiten.');
-  const sumP=ps.filter(v=>!isNaN(v)).reduce((a,b)=>a+b,0);
-  if(!errs.length&&Math.abs(sumP-1)>0.001)errs.push('⚠ Summe = '+sumP.toFixed(4)+' ≠ 1');
-  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');statsEl.style.display='none';if(stabChartInst){stabChartInst.destroy();stabChartInst=null;}return;}
-
-  // Alle x-Werte als Zahlen parsen (falls möglich) für echte Positionierung
-  const xNums=xRaw.map(s=>parseFloat(s));
-  const allNum=xNums.every(v=>!isNaN(v));
-
-  if(allNum){
-    const mu=xNums.reduce((a,x,i)=>a+x*ps[i],0);
-    const varV=xNums.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);
-    statsEl.style.display='block';
-    statsEl.innerHTML='<b>E('+varUp+'):</b> '+mu.toFixed(4)+' | <b>Var('+varUp+'):</b> '+varV.toFixed(4)+' | <b>σ:</b> '+Math.sqrt(varV).toFixed(4);
-  }else{statsEl.style.display='none';}
-
-  const maxP=Math.max(...ps);
-  const yLbl='P('+varUp+'='+varLow+')';
-
-  if(allNum){
-    // ── NUMERISCHER MODUS: echte x-Positionen ──
-    const xMin=Math.min(...xNums);
-    const xMax=Math.max(...xNums);
-    const xRange=xMax-xMin||1;
-    const pad=xRange*0.2;
-    // Ticks: die eingegebenen x-Werte
-    const xTicks=xNums.map((v,i)=>({val:v,label:xRaw[i]}));
-    const sd=xNums.map((x,i)=>({x,y:ps[i]}));
-    if(stabChartInst)stabChartInst.destroy();
-    const gp=makeGridPlugin();
-    const ap=makeArrowPlugin(varLow,yLbl,xTicks);
-    const slp={id:'sl_'+Math.random().toString(36).slice(2),afterDraw(ch){
-      const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-      c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
-      sd.forEach(pt=>{
-        const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);
-        c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();
-        c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();
-      });
-      c.restore();
-    }};
-    stabChartInst=new Chart(document.getElementById('stab-chart'),{
-      type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin-pad,xMax+pad,0,maxP*1.3)},
-      plugins:[gp,ap,slp]
-    });
-  }else{
-    // ── KATEGORISCHER MODUS: Index-basiert ──
-    const N=xRaw.length;
-    const xTicks=xRaw.map((lbl,i)=>({val:i,label:lbl}));
-    const sd=xRaw.map((lbl,i)=>({x:i,y:ps[i]}));
-    if(stabChartInst)stabChartInst.destroy();
-    const gp=makeGridPlugin();
-    const ap=makeArrowPlugin(varLow,yLbl,xTicks);
-    const slp={id:'sl2_'+Math.random().toString(36).slice(2),afterDraw(ch){
-      const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
-      c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
-      sd.forEach(pt=>{
-        const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);
-        c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();
-        c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();
-      });
-      c.restore();
-    }};
-    stabChartInst=new Chart(document.getElementById('stab-chart'),{
-      type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,N-.5,0,maxP*1.3)},
-      plugins:[gp,ap,slp]
-    });
+  const pts=[];
+  let html='<table><tr><th>x</th><th>f(x)</th></tr>';
+  for(let x=from;x<=to+1e-9;x+=step){
+    x=Math.round(x*1e10)/1e10;
+    let fx;try{fx=safeEvalX(expr,x);if(!isFinite(fx))fx=NaN;}catch(e){fx=NaN;}
+    html+='<tr><td>'+de(x)+'</td><td>'+(isNaN(fx)?'—':de(roundDisp(fx)))+'</td></tr>';
+    if(!isNaN(fx))pts.push({x,y:fx});
   }
-}
+  res.innerHTML=html+'</table>';
 
-// ══════════════════════════════════════════════
-// HISTOGRAMM
-// ══════════════════════════════════════════════
-let histChartInst=null;
-function drawHist(){
-  const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
-  const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));
-  const errEl=document.getElementById('hist-error');const histEl=document.getElementById('hist-result');
-  errEl.innerHTML='';const errs=[];
-  if(bounds.some(isNaN))errs.push('⚠ Ungültige Grenzen.');if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
-  if(!bounds.some(isNaN)&&!freqs.some(isNaN)){if(bounds.length!==freqs.length+1)errs.push('⚠ Grenzenanzahl falsch.');if(freqs.some(v=>v<0))errs.push('⚠ Neg. Häufigkeiten.');for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen aufsteigend.');}
-  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');histEl.style.display='none';if(histChartInst){histChartInst.destroy();histChartInst=null;}return;}
-  const widths=freqs.map((_,i)=>bounds[i+1]-bounds[i]);
-  const densities=freqs.map((f,i)=>f/widths[i]);
-  const total=freqs.reduce((a,b)=>a+b,0);
-  histEl.style.display='block';
-  let html='<table><tr><th>Klasse</th><th>Breite</th><th>h</th><th>rel.h</th><th>Dichte</th></tr>';
-  freqs.forEach((_,i)=>html+='<tr><td>['+bounds[i]+','+bounds[i+1]+')</td><td>'+widths[i]+'</td><td>'+freqs[i]+'</td><td>'+(freqs[i]/total).toFixed(4)+'</td><td>'+densities[i].toFixed(4)+'</td></tr>');
-  histEl.innerHTML=html+'</table>';
-  const maxD=Math.max(...densities);const xMin=bounds[0],xMax=bounds[bounds.length-1];
-  const xTicks=bounds.map(b=>({val:b,label:fmtNum(b)}));
-  const hd={bounds,densities};
-  if(histChartInst)histChartInst.destroy();
-  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx',xTicks);
-  const hbp={id:'hb_'+Math.random().toString(36).slice(2),afterDraw(ch){const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();}};
-  histChartInst=new Chart(document.getElementById('hist-chart'),{type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},plugins:[gp,ap,hbp]});
+  // Graphenpunkte (fein aufgelöst)
+  const graphPts=[];
+  if(wtShowGraph){
+    const fine=600;const stepF=(to-from)/fine;
+    for(let i=0;i<=fine;i++){const x=from+i*stepF;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}graphPts.push({x,y});}
+  }
+
+  // Y-Bereich bestimmen
+  const allY=[...pts.map(p=>p.y),...graphPts.filter(p=>p.y!==null).map(p=>p.y)].filter(v=>isFinite(v));
+  if(!allY.length){if(wtChartInst){wtChartInst.destroy();wtChartInst=null;}return;}
+  let yMin=Math.min(...allY),yMax=Math.max(...allY);
+  const yPad=(yMax-yMin)*.12||1;yMin-=yPad;yMax+=yPad;
+  const xRange=to-from;const xPad=xRange*.08||0.5;
+
+  const datasets=[];
+  if(wtShowGraph&&graphPts.length){
+    datasets.push({label:'Graph',data:graphPts.map(p=>({x:p.x,y:p.y})),borderColor:'#e94560',backgroundColor:'transparent',borderWidth:2,pointRadius:0,spanGaps:false,tension:0,type:'line',parsing:false,order:2});
+  }
+  if(wtShowPts&&pts.length){
+    datasets.push({label:'Punkte',data:pts.map(p=>({x:p.x,y:p.y})),borderColor:'#1565c0',backgroundColor:'#1565c0',pointRadius:5,pointHoverRadius:7,showLine:false,type:'scatter',parsing:false,order:1});
+  }
+  if(!datasets.length){if(wtChartInst){wtChartInst.destroy();wtChartInst=null;}return;}
+  if(wtChartInst)wtChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');
+  wtChartInst=new Chart(document.getElementById('wt-chart'),{
+    type:'scatter',
+    data:{datasets},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(from-xPad,to+xPad,yMin,yMax)},
+    plugins:[gp,ap]
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -677,17 +631,162 @@ const GCOLS=['#e94560','#1565c0','#2e7d32','#f9a825','#6a1b9a','#00838f'];
 const GLBLS=['f₁','f₂','f₃','f₄','f₅','f₆'];
 function addGraphFunc(){if(graphFuncCount>=6)return;const id=graphFuncCount++;const div=document.createElement('div');div.className='form-row graph-func-row';div.dataset.id=id;const iid='graph-expr-'+id;div.innerHTML='<label>'+GLBLS[id]+'(x)=</label><input type="text" class="graph-expr" id="'+iid+'" placeholder="Funktion…" style="width:240px" oninput="drawGraph()"><input type="color" class="graph-color" value="'+GCOLS[id]+'" oninput="drawGraph()">';document.getElementById('graph-funcs').appendChild(div);}
 function removeGraphFunc(){if(graphFuncCount<=1)return;document.querySelectorAll('.graph-func-row')[graphFuncCount-1].remove();graphFuncCount--;drawGraph();}
-function drawGraph(){const xmin=parseFloat(document.getElementById('graph-xmin').value);const xmax=parseFloat(document.getElementById('graph-xmax').value);const pts=parseInt(document.getElementById('graph-pts').value)||600;if(isNaN(xmin)||isNaN(xmax)||xmin>=xmax)return;const rows=document.querySelectorAll('.graph-func-row');const datasets=[];rows.forEach(row=>{const expr=row.querySelector('.graph-expr').value.trim();const color=row.querySelector('.graph-color').value;if(!expr)return;const step=(xmax-xmin)/pts,dp=[];for(let i=0;i<=pts;i++){const x=xmin+i*step;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}dp.push({x:Math.round(x*1e8)/1e8,y:y!==null?Math.round(y*1e8)/1e8:null});}datasets.push({label:'',data:dp,borderColor:color,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,spanGaps:false,tension:0});});if(!datasets.length)return;let allY=datasets.flatMap(d=>d.data.map(p=>p.y).filter(y=>y!==null));if(!allY.length)return;let yMin=Math.min(...allY),yMax=Math.max(...allY);const yPad=(yMax-yMin)*.1||1;if(graphChartInst)graphChartInst.destroy();const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');graphChartInst=new Chart(document.getElementById('graph-chart'),{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:{right:55,top:36,left:20,bottom:44}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},plugins:[gp,ap]});}
+function drawGraph(){
+  const xmin=parseFloat(document.getElementById('graph-xmin').value);
+  const xmax=parseFloat(document.getElementById('graph-xmax').value);
+  const pts=parseInt(document.getElementById('graph-pts').value)||600;
+  if(isNaN(xmin)||isNaN(xmax)||xmin>=xmax)return;
+  const rows=document.querySelectorAll('.graph-func-row');const datasets=[];
+  rows.forEach(row=>{const expr=row.querySelector('.graph-expr').value.trim();const color=row.querySelector('.graph-color').value;if(!expr)return;const step=(xmax-xmin)/pts,dp=[];for(let i=0;i<=pts;i++){const x=xmin+i*step;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}dp.push({x:Math.round(x*1e8)/1e8,y:y!==null?Math.round(y*1e8)/1e8:null});}datasets.push({label:'',data:dp,borderColor:color,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,spanGaps:false,tension:0});});
+  if(!datasets.length)return;
+  let allY=datasets.flatMap(d=>d.data.map(p=>p.y).filter(y=>y!==null));if(!allY.length)return;
+  let yMin=Math.min(...allY),yMax=Math.max(...allY);const yPad=(yMax-yMin)*.1||1;
+  if(graphChartInst)graphChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');
+  graphChartInst=new Chart(document.getElementById('graph-chart'),{type:'line',data:{datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},plugins:[gp,ap]});
+}
 
 // ══════════════════════════════════════════════
-// BAUMDIAGRAMM – Sichtbarkeit
+// BINOMIALVERTEILUNG
+// ══════════════════════════════════════════════
+function binom(n,k){if(k<0||k>n)return 0;if(k===0||k===n)return 1;if(k>n-k)k=n-k;let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;}
+function binomPDF(n,p,k){return binom(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);}
+function binomCDF(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binomPDF(n,p,i);return s;}
+let binomChartInst=null,currentHL='eq';
+function setHL(m){currentHL=m;['eq','le','rng','none'].forEach(x=>{const b=document.getElementById('hl-'+x);if(b)b.classList.toggle('active',x===m);});}
+function binomLive(){
+  const n=parseInt(document.getElementById('bn-n').value);
+  const p=parseDE(document.getElementById('bn-p').value);
+  const kEq=parseInt(document.getElementById('bn-k-eq').value);
+  const kLe=parseInt(document.getElementById('bn-k-le').value);
+  const k1=parseInt(document.getElementById('bn-k1').value);
+  const k2=parseInt(document.getElementById('bn-k2').value);
+  const res=document.getElementById('binom-result');
+  if(isNaN(n)||isNaN(p)||p<0||p>1||n<1){res.innerHTML='<div class="error-msg">⚠ n≥1, 0≤p≤1</div>';return;}
+  const pEq=isNaN(kEq)?'—':de(parseFloat(binomPDF(n,p,kEq).toFixed(8)));
+  const pLe=isNaN(kLe)?'—':de(parseFloat(binomCDF(n,p,kLe).toFixed(8)));
+  let pRng='—';if(!isNaN(k1)&&!isNaN(k2)&&k1<=k2){let s=0;for(let i=k1;i<=k2;i++)s+=binomPDF(n,p,i);pRng=de(parseFloat(s.toFixed(8)));}
+  let html='<table><tr><th>Abfrage</th><th>Ergebnis</th></tr>'
+    +'<tr><td style="color:#f9a825">P(X='+kEq+')</td><td>'+pEq+'</td></tr>'
+    +'<tr><td style="color:#4fc3f7">P(X≤'+kLe+')</td><td>'+pLe+'</td></tr>'
+    +'<tr><td style="color:#a8e063">P('+k1+'≤X≤'+k2+')</td><td>'+pRng+'</td></tr>'
+    +'<tr><th>k</th><th>P(X=k)</th></tr>';
+  for(let k=0;k<=n;k++)html+='<tr><td>'+k+'</td><td>'+de(parseFloat(binomPDF(n,p,k).toFixed(6)))+'</td></tr>';
+  res.innerHTML=html+'</table>';
+  const data=[];for(let k=0;k<=n;k++)data.push({x:k,y:parseFloat(binomPDF(n,p,k).toFixed(10))});
+  const maxP=Math.max(...data.map(d=>d.y));
+  function bCol(k){if(currentHL==='eq')return k===kEq?'rgba(249,168,37,.9)':'rgba(180,180,180,.45)';if(currentHL==='le')return k<=kLe?'rgba(79,195,247,.9)':'rgba(180,180,180,.45)';if(currentHL==='rng')return(k>=k1&&k<=k2)?'rgba(168,224,99,.9)':'rgba(180,180,180,.45)';return'rgba(233,69,96,.75)';}
+  function bStr(k){if(currentHL==='eq')return k===kEq?'#f57f17':'#888';if(currentHL==='le')return k<=kLe?'#0277bd':'#888';if(currentHL==='rng')return(k>=k1&&k<=k2)?'#558b2f':'#888';return'#c0392b';}
+  if(binomChartInst)binomChartInst.destroy();
+  const gp=makeGridPlugin();
+  const xTicks=[];for(let k=0;k<=n;k++)xTicks.push({val:k,label:k});
+  const ap=makeArrowPlugin('k','P(X=k)',xTicks);
+  const bbp={id:'bb_'+Math.random().toString(36).slice(2),afterDraw(ch){
+    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+    c.save();
+    data.forEach(pt=>{
+      const x1=xA.getPixelForValue(pt.x-0.5),x2=xA.getPixelForValue(pt.x+0.5),py=yA.getPixelForValue(pt.y);
+      c.fillStyle=bCol(pt.x);c.strokeStyle=bStr(pt.x);c.lineWidth=1;
+      c.fillRect(x1,py,x2-x1,y0-py);c.strokeRect(x1,py,x2-x1,y0-py);
+    });
+    c.restore();
+  }};
+  binomChartInst=new Chart(document.getElementById('binom-chart'),{type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.25)},plugins:[gp,ap,bbp]});
+}
+
+// ══════════════════════════════════════════════
+// STABDIAGRAMM – Semikolon + Komma als Dezimal
+// ══════════════════════════════════════════════
+let stabChartInst=null;
+function drawStab(){
+  const varRaw=(document.getElementById('stab-varname').value||'X').trim();
+  const varUp=varRaw.toUpperCase();
+  const varLow=varRaw.toLowerCase();
+  const xRaw=parseSemiListStr(document.getElementById('stab-x').value);
+  const ps=parseSemiList(document.getElementById('stab-p').value);
+  const errEl=document.getElementById('stab-error');
+  const statsEl=document.getElementById('stab-stats');
+  errEl.innerHTML='';
+  const errs=[];
+  if(ps.some(isNaN))errs.push('⚠ Ungültige Wahrscheinlichkeiten.');
+  if(xRaw.length!==ps.length)errs.push('⚠ Anzahl Werte ≠ Anzahl P.');
+  if(ps.some(v=>v<0))errs.push('⚠ Negative Wahrscheinlichkeiten.');
+  const sumP=ps.filter(v=>!isNaN(v)).reduce((a,b)=>a+b,0);
+  if(!errs.length&&Math.abs(sumP-1)>0.001)errs.push('⚠ Summe = '+de(parseFloat(sumP.toFixed(4)))+' ≠ 1');
+  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');statsEl.style.display='none';if(stabChartInst){stabChartInst.destroy();stabChartInst=null;}return;}
+
+  const xNums=xRaw.map(s=>parseDE(s));
+  const allNum=xNums.every(v=>!isNaN(v));
+  const yLbl='P('+varUp+'='+varLow+')';
+
+  if(allNum){
+    const mu=xNums.reduce((a,x,i)=>a+x*ps[i],0);
+    const varV=xNums.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);
+    statsEl.style.display='block';
+    statsEl.innerHTML='<b>E('+varUp+'):</b> '+de(parseFloat(mu.toFixed(4)))+' | <b>Var:</b> '+de(parseFloat(varV.toFixed(4)))+' | <b>σ:</b> '+de(parseFloat(Math.sqrt(varV).toFixed(4)));
+    const xMin=Math.min(...xNums),xMax=Math.max(...xNums);
+    const xRange=xMax-xMin||1;const pad=xRange*0.2;
+    const xTicks=xNums.map((v,i)=>({val:v,label:xRaw[i].replace('.',',')}));
+    if(stabChartInst)stabChartInst.destroy();
+    const gp=makeGridPlugin(),ap=makeArrowPlugin(varLow,yLbl,xTicks);
+    const slp={id:'sl_'+Math.random().toString(36).slice(2),afterDraw(ch){
+      const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+      c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
+      xNums.forEach((x,i)=>{const px=xA.getPixelForValue(x),py=yA.getPixelForValue(ps[i]);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});
+      c.restore();
+    }};
+    stabChartInst=new Chart(document.getElementById('stab-chart'),{type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin-pad,xMax+pad,0,Math.max(...ps)*1.3)},plugins:[gp,ap,slp]});
+  }else{
+    statsEl.style.display='none';
+    const N=xRaw.length;
+    const xTicks=xRaw.map((lbl,i)=>({val:i,label:lbl.replace('.',',')}));
+    if(stabChartInst)stabChartInst.destroy();
+    const gp=makeGridPlugin(),ap=makeArrowPlugin(varLow,yLbl,xTicks);
+    const slp={id:'sl2_'+Math.random().toString(36).slice(2),afterDraw(ch){
+      const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+      c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
+      ps.forEach((p,i)=>{const px=xA.getPixelForValue(i),py=yA.getPixelForValue(p);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});
+      c.restore();
+    }};
+    stabChartInst=new Chart(document.getElementById('stab-chart'),{type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,N-.5,0,Math.max(...ps)*1.3)},plugins:[gp,ap,slp]});
+  }
+}
+
+// ══════════════════════════════════════════════
+// HISTOGRAMM – Semikolon + Komma
+// ══════════════════════════════════════════════
+let histChartInst=null;
+function drawHist(){
+  const bounds=parseSemiList(document.getElementById('hist-bounds').value);
+  const freqs=parseSemiList(document.getElementById('hist-freq').value);
+  const errEl=document.getElementById('hist-error');const histEl=document.getElementById('hist-result');
+  errEl.innerHTML='';const errs=[];
+  if(bounds.some(isNaN))errs.push('⚠ Ungültige Grenzen.');if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
+  if(!bounds.some(isNaN)&&!freqs.some(isNaN)){if(bounds.length!==freqs.length+1)errs.push('⚠ Grenzenanzahl falsch.');if(freqs.some(v=>v<0))errs.push('⚠ Neg. Häufigkeiten.');for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen aufsteigend.');}
+  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');histEl.style.display='none';if(histChartInst){histChartInst.destroy();histChartInst=null;}return;}
+  const widths=freqs.map((_,i)=>bounds[i+1]-bounds[i]);
+  const densities=freqs.map((f,i)=>f/widths[i]);
+  const total=freqs.reduce((a,b)=>a+b,0);
+  histEl.style.display='block';
+  let html='<table><tr><th>Klasse</th><th>Breite</th><th>h</th><th>rel.h</th><th>Dichte</th></tr>';
+  freqs.forEach((_,i)=>html+='<tr><td>['+de(bounds[i])+'; '+de(bounds[i+1])+')</td><td>'+de(widths[i])+'</td><td>'+de(freqs[i])+'</td><td>'+de(parseFloat((freqs[i]/total).toFixed(4)))+'</td><td>'+de(parseFloat(densities[i].toFixed(4)))+'</td></tr>');
+  histEl.innerHTML=html+'</table>';
+  const maxD=Math.max(...densities);const xMin=bounds[0],xMax=bounds[bounds.length-1];
+  const xTicks=bounds.map(b=>({val:b,label:fmtDE(b)}));
+  const hd={bounds,densities};
+  if(histChartInst)histChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx',xTicks);
+  const hbp={id:'hb_'+Math.random().toString(36).slice(2),afterDraw(ch){const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();}};
+  histChartInst=new Chart(document.getElementById('hist-chart'),{type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},plugins:[gp,ap,hbp]});
+}
+
+// ══════════════════════════════════════════════
+// BAUMDIAGRAMM
 // ══════════════════════════════════════════════
 const visState={prob:true,omega:true,pomega:true,sum:true};
 function toggleVis(key){visState[key]=!visState[key];const btn=document.getElementById('vb-'+key);if(btn)btn.classList.toggle('active',visState[key]);renderTree();}
 
-// ══════════════════════════════════════════════
-// BRUCH-ARITHMETIK
-// ══════════════════════════════════════════════
+// Bruch-Arithmetik
 function gcd(a,b){a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;}
 function lcm(a,b){const r=Math.abs(a*b)/gcd(a,b);return r>1e9?1e9:r;}
 function fracNew(n,d){if(d===0)return{n:0,d:1};if(d<0){n=-n;d=-d;}const g=gcd(Math.abs(n),d);return{n:n/g,d:d/g};}
@@ -698,60 +797,35 @@ function fracStr(f){if(f.d===1)return String(f.n);return f.n+'/'+f.d;}
 function fracToFloat(f){return f.d===0?0:f.n/f.d;}
 function commonDenomFracs(fracs){let D=1;fracs.forEach(f=>{D=lcm(D,f.d);if(D>1e8)D=1e8;});return D;}
 function fracToCommonDenom(f,D){const n=Math.round(f.n*(D/f.d));return n+'/'+D;}
-function parseProbInput(s){if(!s||s.trim()==='')return null;s=s.trim();const fm=s.match(/^(-?\d+)\s*\/\s*(\d+)$/);if(fm){const n=parseInt(fm[1]),d=parseInt(fm[2]);if(d===0)return null;return fracNew(n,d);}const v=parseFloat(s);if(isNaN(v)||v<0)return null;return fracFromFloat(v);}
+function parseProbInput(s){if(!s||s.trim()==='')return null;s=s.trim().replace(',','.');const fm=s.match(/^(-?\d+)\s*\/\s*(\d+)$/);if(fm){const n=parseInt(fm[1]),d=parseInt(fm[2]);if(d===0)return null;return fracNew(n,d);}const v=parseFloat(s);if(isNaN(v)||v<0)return null;return fracFromFloat(v);}
 
-// ══════════════════════════════════════════════
-// SVG-ZEICHENHILFEN – Überstrich FIX
-// Überstrichbalken: cap-height ≈ 0.71×FS
-// Linie soll knapp ÜBER dem Zeichen sein:
-//   lineY = baselineY - capH - GAP (GAP=5px)
-// ══════════════════════════════════════════════
-const OL_GAP=5;   // px Abstand zwischen Buchstabenoberkante und Balken
-const OL_THICK=2.5;
-
+// SVG-Zeichenhilfen
+const OL_GAP=5,OL_THICK=2.5;
 function svgChar(char,overline,cx,baselineY,fontSize,color,bold){
   const fw=bold?'bold':'normal';
-  let out='<text x="'+cx+'" y="'+baselineY
-    +'" text-anchor="middle" dominant-baseline="text-after-edge"'
-    +' font-size="'+fontSize+'" font-weight="'+fw+'" fill="'+color+'">'+escHtml(char)+'</text>';
-  if(overline){
-    const capH=fontSize*0.71;
-    const lineY=baselineY-capH-OL_GAP;
-    const hw=fontSize*0.42;
-    out+='<line x1="'+(cx-hw)+'" y1="'+lineY+'" x2="'+(cx+hw)+'" y2="'+lineY
-      +'" stroke="'+color+'" stroke-width="'+OL_THICK+'" stroke-linecap="round"/>';
-  }
+  let out='<text x="'+cx+'" y="'+baselineY+'" text-anchor="middle" dominant-baseline="text-after-edge" font-size="'+fontSize+'" font-weight="'+fw+'" fill="'+color+'">'+escHtml(char)+'</text>';
+  if(overline){const capH=fontSize*0.71;const lineY=baselineY-capH-OL_GAP;const hw=fontSize*0.42;out+='<line x1="'+(cx-hw)+'" y1="'+lineY+'" x2="'+(cx+hw)+'" y2="'+lineY+'" stroke="'+color+'" stroke-width="'+OL_THICK+'" stroke-linecap="round"/>';}
   return out;
 }
-
 function svgSequence(parts,cx,baselineY,fontSize,color){
   if(!parts||!parts.length)return'';
-  const cw=fontSize*0.65;
-  const total=parts.length*cw;
-  let x=cx-total/2+cw/2;
-  let out='';
+  const cw=fontSize*0.65;const total=parts.length*cw;let x=cx-total/2+cw/2;let out='';
   parts.forEach(p=>{out+=svgChar(p.char,p.overline,x,baselineY,fontSize,color,false);x+=cw;});
   return out;
 }
 
-// ══════════════════════════════════════════════
-// MANUELLER BAUM – Datenmodell
-// Jeder Knoten hat:
-//   showProb:    Pfadwahrscheinlichkeit P(ωᵢ) anzeigen
-//   showAstProb: Wahrscheinlichkeit am Ast anzeigen
-// ══════════════════════════════════════════════
+// Datenmodell
 let manualTree={id:0,parentId:null,label:'',prob:'1',overline:false,showProb:true,showAstProb:true,children:[
-  {id:1,parentId:0,label:'A',prob:'0.6',overline:false,showProb:true,showAstProb:true,children:[
-    {id:3,parentId:1,label:'X',prob:'0.7',overline:false,showProb:true,showAstProb:true,children:[]},
-    {id:4,parentId:1,label:'Y',prob:'0.3',overline:false,showProb:true,showAstProb:true,children:[]}
+  {id:1,parentId:0,label:'A',prob:'0,6',overline:false,showProb:true,showAstProb:true,children:[
+    {id:3,parentId:1,label:'X',prob:'0,7',overline:false,showProb:true,showAstProb:true,children:[]},
+    {id:4,parentId:1,label:'Y',prob:'0,3',overline:false,showProb:true,showAstProb:true,children:[]}
   ]},
-  {id:2,parentId:0,label:'B',prob:'0.4',overline:false,showProb:true,showAstProb:true,children:[
-    {id:5,parentId:2,label:'X',prob:'0.7',overline:false,showProb:true,showAstProb:true,children:[]},
-    {id:6,parentId:2,label:'Y',prob:'0.3',overline:false,showProb:true,showAstProb:true,children:[]}
+  {id:2,parentId:0,label:'B',prob:'0,4',overline:false,showProb:true,showAstProb:true,children:[
+    {id:5,parentId:2,label:'X',prob:'0,7',overline:false,showProb:true,showAstProb:true,children:[]},
+    {id:6,parentId:2,label:'Y',prob:'0,3',overline:false,showProb:true,showAstProb:true,children:[]}
   ]}
 ]};
 let manualNextId=7;
-
 function findNode(tree,id){if(tree.id===id)return tree;for(const c of tree.children){const f=findNode(c,id);if(f)return f;}return null;}
 function removeNodeFromTree(tree,id){tree.children=tree.children.filter(c=>c.id!==id);tree.children.forEach(c=>removeNodeFromTree(c,id));}
 const AUTOFILL_LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -759,7 +833,6 @@ function getUsedLabels(node,set=new Set()){if(node.label&&node.label!=='?'&&node
 function pickLabel(used){for(const ch of AUTOFILL_LETTERS){if(!used.has(ch)){used.add(ch);return ch;}}return'?';}
 
 function renderLevelEditor(){const w=document.getElementById('tree-level-editor');w.innerHTML='';renderNodeEditor(manualTree,w,0);}
-
 function renderNodeEditor(node,container,depth){
   if(depth===0){node.children.forEach(c=>renderNodeEditor(c,container,depth+1));return;}
   const box=document.createElement('div');
@@ -770,48 +843,24 @@ function renderNodeEditor(node,container,depth){
   const previewHtml=node.overline
     ?'<span style="display:inline-flex;flex-direction:column;align-items:center;font-weight:bold;color:#4fc3f7;font-size:.95rem"><span style="border-top:2.5px solid #4fc3f7;padding:0 2px;line-height:1.3">'+lbl+'</span></span>'
     :'<span style="font-weight:bold;color:#4fc3f7;font-size:.95rem">'+lbl+'</span>';
-
   box.innerHTML=
     '<span style="color:'+lvlColor+';font-weight:bold;font-size:.8rem;min-width:56px">Stufe '+depth+'</span>'
-    // Label-Eingabe
-    +'<input type="text" value="'+escHtml(node.label)+'" placeholder="Label" '
-    +'onchange="findNode(manualTree,'+node.id+').label=this.value;renderLevelEditor();renderTree()" '
-    +'style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
-    // Gegenereignis-Checkbox
-    +'<label title="Gegenereignis" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px">'
-    +'<input type="checkbox" '+(node.overline?'checked':'')
-    +' onchange="findNode(manualTree,'+node.id+').overline=this.checked;renderLevelEditor();renderTree()">'
-    +'<span style="color:#aaa;font-size:.82rem;border-top:2px solid #aaa;padding:0 2px;line-height:1.5">Ā</span>'
-    +'</label>'
-    // Wahrscheinlichkeit
+    +'<input type="text" value="'+escHtml(node.label)+'" placeholder="Label" onchange="findNode(manualTree,'+node.id+').label=this.value;renderLevelEditor();renderTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+    +'<label title="Gegenereignis" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px"><input type="checkbox" '+(node.overline?'checked':'')+' onchange="findNode(manualTree,'+node.id+').overline=this.checked;renderLevelEditor();renderTree()"><span style="color:#aaa;font-size:.82rem;border-top:2px solid #aaa;padding:0 2px;line-height:1.5">Ā</span></label>'
     +'<span style="color:#aaa;font-size:.82rem">p=</span>'
-    +'<input type="text" value="'+escHtml(node.prob)+'" '
-    +'onchange="findNode(manualTree,'+node.id+').prob=this.value;renderTree()" '
-    +'style="width:68px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
-    // NEU: p am Ast anzeigen?
-    +'<label title="Wahrscheinlichkeit am Ast anzeigen" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px">'
-    +'<input type="checkbox" '+(node.showAstProb!==false?'checked':'')
-    +' onchange="findNode(manualTree,'+node.id+').showAstProb=this.checked;renderTree()">'
-    +'<span style="color:#c0392b;font-size:.78rem;font-weight:bold">p</span>'
-    +'</label>'
-    // Pfadwahrscheinlichkeit anzeigen?
-    +'<label title="Pfadwahrscheinlichkeit P(ωᵢ) anzeigen" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px">'
-    +'<input type="checkbox" '+(node.showProb!==false?'checked':'')
-    +' onchange="findNode(manualTree,'+node.id+').showProb=this.checked;renderTree()">'
-    +'<span style="color:#2e7d32;font-size:.78rem">P(ω)</span>'
-    +'</label>'
+    +'<input type="text" value="'+escHtml(node.prob)+'" onchange="findNode(manualTree,'+node.id+').prob=this.value;renderTree()" style="width:68px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem">'
+    +'<label title="p am Ast anzeigen" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px"><input type="checkbox" '+(node.showAstProb!==false?'checked':'')+' onchange="findNode(manualTree,'+node.id+').showAstProb=this.checked;renderTree()"><span style="color:#c0392b;font-size:.78rem;font-weight:bold">p</span></label>'
+    +'<label title="P(ωᵢ) anzeigen" style="display:flex;align-items:center;gap:3px;cursor:pointer;background:#1a2a4a;border:1px solid #253a5e;border-radius:6px;padding:3px 7px"><input type="checkbox" '+(node.showProb!==false?'checked':'')+' onchange="findNode(manualTree,'+node.id+').showProb=this.checked;renderTree()"><span style="color:#2e7d32;font-size:.78rem">P(ω)</span></label>'
     +'<button onclick="addChildNode('+node.id+')" style="background:#253a5e;border:1px solid #4fc3f7;color:#4fc3f7;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:.78rem">+ Kind</button>'
     +'<button onclick="removeNodeById('+node.id+')" style="background:#253a5e;border:1px solid #e94560;color:#e94560;padding:3px 9px;border-radius:6px;cursor:pointer;font-size:.78rem">✕ Ast</button>'
     +'<span style="margin-left:4px">'+previewHtml+'</span>';
   container.appendChild(box);
   node.children.forEach(c=>renderNodeEditor(c,container,depth+1));
 }
-
 function addChildNode(parentId){const parent=findNode(manualTree,parentId);if(!parent)return;parent.children.push({id:manualNextId++,parentId,label:'?',prob:'1/2',overline:false,showProb:true,showAstProb:true,children:[]});renderLevelEditor();renderTree();}
 function removeNodeById(id){removeNodeFromTree(manualTree,id);renderLevelEditor();renderTree();}
 function manualAddBranch(){const used=getUsedLabels(manualTree);manualTree.children.push({id:manualNextId++,parentId:0,label:pickLabel(used),prob:'1/2',overline:false,showProb:true,showAstProb:true,children:[]});renderLevelEditor();renderTree();}
 function manualRemoveBranch(){if(manualTree.children.length<=1)return;manualTree.children.pop();renderLevelEditor();renderTree();}
-
 function autoFillTree(){
   const usedLabels=getUsedLabels(manualTree);
   function fixNode(node){
@@ -819,8 +868,7 @@ function autoFillTree(){
     node.children.forEach(c=>{if(!c.label||c.label.trim()===''||c.label==='?')c.label=pickLabel(usedLabels);});
     const fracs=node.children.map(c=>parseProbInput(c.prob));
     const missingIdxs=fracs.map((f,i)=>i).filter(i=>fracs[i]===null||fracToFloat(fracs[i])<=0);
-    let knownSum=fracNew(0,1);
-    fracs.forEach((f,i)=>{if(f&&fracToFloat(f)>0&&!missingIdxs.includes(i))knownSum=fracAdd(knownSum,f);});
+    let knownSum=fracNew(0,1);fracs.forEach((f,i)=>{if(f&&fracToFloat(f)>0&&!missingIdxs.includes(i))knownSum=fracAdd(knownSum,f);});
     if(missingIdxs.length>0){const rest=fracNew(knownSum.d-knownSum.n,knownSum.d);const fill=fracNew(rest.n,rest.d*missingIdxs.length);missingIdxs.forEach(i=>{node.children[i].prob=fracStr(fill);});}
     const total=node.children.reduce((acc,c)=>{const f=parseProbInput(c.prob);return f?fracAdd(acc,f):acc;},fracNew(0,1));
     if(Math.abs(fracToFloat(total)-1)>0.0001&&total.n>0){node.children.forEach(c=>{const f=parseProbInput(c.prob);if(f)c.prob=fracStr(fracNew(f.n*total.d,f.d*total.n));});}
@@ -829,28 +877,18 @@ function autoFillTree(){
   fixNode(manualTree);renderLevelEditor();renderTree();
 }
 
-// ══════════════════════════════════════════════
-// renderTree
-// ══════════════════════════════════════════════
 function renderTree(){
   const errEl=document.getElementById('tree-manual-error');errEl.innerHTML='';
   const warns=[];
   function checkSums(node){if(node.children.length===0)return;const total=node.children.reduce((acc,c)=>{const f=parseProbInput(c.prob);return f?fracAdd(acc,f):acc;},fracNew(0,1));if(Math.abs(fracToFloat(total)-1)>0.001)warns.push('⚠ Knoten "'+node.label+'": Summe='+fracStr(total)+' ≠ 1');node.children.forEach(c=>checkSums(c));}
-  checkSums(manualTree);
-  if(warns.length)errEl.innerHTML=warns.map(w=>'<div class="error-msg">'+w+'</div>').join('');
-
-  // Pfade extrahieren: [path, probFrac, lbls, showPathProb, showAstProbPerStep]
+  checkSums(manualTree);if(warns.length)errEl.innerHTML=warns.map(w=>'<div class="error-msg">'+w+'</div>').join('');
   function extractPaths(node,pathSoFar,probSoFar,labelsSoFar,showProbSoFar){
-    if(node.children.length===0&&node.id!==0){
-      return[[pathSoFar,probSoFar,labelsSoFar,showProbSoFar]];
-    }
+    if(node.children.length===0&&node.id!==0)return[[pathSoFar,probSoFar,labelsSoFar,showProbSoFar]];
     const res=[];
     node.children.forEach(c=>{
       const f=parseProbInput(c.prob)||fracNew(0,1);
       const newStep={label:c.label,probFrac:f,prob:fracToFloat(f),overline:c.overline||false,nodeId:c.id,showAstProb:c.showAstProb!==false};
-      const newLabels=[...labelsSoFar,{char:c.label,overline:c.overline||false}];
-      const showChild=showProbSoFar&&(c.showProb!==false);
-      res.push(...extractPaths(c,[...pathSoFar,newStep],fracMul(probSoFar,f),newLabels,showChild));
+      res.push(...extractPaths(c,[...pathSoFar,newStep],fracMul(probSoFar,f),[...labelsSoFar,{char:c.label,overline:c.overline||false}],showProbSoFar&&(c.showProb!==false)));
     });
     return res;
   }
@@ -859,13 +897,9 @@ function renderTree(){
   drawTreeFromPaths(allPaths,visState.prob,visState.omega,visState.pomega,visState.sum);
 }
 
-// ══════════════════════════════════════════════
-// AUTO-MODI
-// ══════════════════════════════════════════════
 let treeMode='manual';
 function setTreeMode(m){treeMode=m;['manual','binom','urn'].forEach(x=>{document.getElementById('tree-panel-'+x).style.display=x===m?'':'none';document.getElementById('tree-mode-'+x).classList.toggle('active',x===m);});if(m==='manual')renderTree();else buildAutoTree();}
 function buildAutoTree(){if(treeMode==='binom')buildBinomTree();else if(treeMode==='urn')buildUrnTree();}
-
 function buildBinomTree(){
   const n=parseInt(document.getElementById('tb-n').value)||2;
   const p=parseFloat(document.getElementById('tb-p').value);
@@ -875,16 +909,9 @@ function buildBinomTree(){
   const showSum=document.getElementById('tb-show-sum').checked;
   if(isNaN(p)||p<0||p>1||n<1)return;
   const q=1-p;const pF=fracFromFloat(p);const qF=fracFromFloat(q);let nid=1;
-  function rec(depth,prefix,pf,lbls){
-    if(depth===n)return[[prefix,pf,lbls,true]];
-    const res=[];const hId=nid++;const mId=nid++;
-    res.push(...rec(depth+1,[...prefix,{label:hit,probFrac:pF,prob:fracToFloat(pF),overline:false,nodeId:hId,showAstProb:true}],fracMul(pf,pF),[...lbls,{char:hit,overline:false}]));
-    res.push(...rec(depth+1,[...prefix,{label:hit,probFrac:qF,prob:fracToFloat(qF),overline:true,nodeId:mId,showAstProb:true}],fracMul(pf,qF),[...lbls,{char:hit,overline:true}]));
-    return res;
-  }
+  function rec(depth,prefix,pf,lbls){if(depth===n)return[[prefix,pf,lbls,true]];const res=[];const hId=nid++;const mId=nid++;res.push(...rec(depth+1,[...prefix,{label:hit,probFrac:pF,prob:fracToFloat(pF),overline:false,nodeId:hId,showAstProb:true}],fracMul(pf,pF),[...lbls,{char:hit,overline:false}]));res.push(...rec(depth+1,[...prefix,{label:hit,probFrac:qF,prob:fracToFloat(qF),overline:true,nodeId:mId,showAstProb:true}],fracMul(pf,qF),[...lbls,{char:hit,overline:true}]));return res;}
   drawTreeFromPaths(rec(0,[],fracNew(1,1),[]),showProb,showProd,showProd,showSum);
 }
-
 let urnColors=[{label:'R',count:3},{label:'B',count:2}];
 function renderUrnColors(){const w=document.getElementById('urn-colors-wrap');w.innerHTML='';urnColors.forEach((c,i)=>{const row=document.createElement('div');row.className='urn-color-row';row.innerHTML='<span style="color:#aaa;font-size:.85rem;min-width:60px">Farbe '+(i+1)+':</span><input type="text" value="'+escHtml(c.label)+'" onchange="urnColors['+i+'].label=this.value;buildAutoTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:5px 8px;border-radius:7px;font-size:.9rem"><span style="color:#aaa;font-size:.85rem">Anzahl:</span><input type="number" value="'+c.count+'" min="0" onchange="urnColors['+i+'].count=parseInt(this.value)||0;buildAutoTree()" style="width:65px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:5px 8px;border-radius:7px;font-size:.9rem">';w.appendChild(row);});}
 function addUrnColor(){if(urnColors.length>=6)return;urnColors.push({label:'G',count:1});renderUrnColors();buildAutoTree();}
@@ -900,106 +927,55 @@ function buildUrnTree(){
 }
 
 // ══════════════════════════════════════════════
-// UNIVERSELLE SVG-ZEICHENFUNKTION
-// allPaths: [[path, probFrac, lbls, showPathProb], ...]
+// SVG ZEICHNEN + KNAPPER BOUNDING BOX EXPORT
 // ══════════════════════════════════════════════
 function drawTreeFromPaths(allPaths,showProb,showOmega,showPomega,showSum){
   if(!allPaths.length)return;
   const leafCount=allPaths.length;
   const depth=Math.max(...allPaths.map(([p])=>p.length));
   const showProd=showOmega||showPomega;
-
   const pathFracs=allPaths.map(([,f])=>f);
   const D=commonDenomFracs(pathFracs);
-
   const FS=18,FSP=14,FSO=15;
   const RH=72,CW=175,PX=55,PY=50;
   const OMEGA_W=showOmega?100:0;
   const PROB_W=showPomega?120:0;
   const COL_SEP=showProd?14:0;
   const SUM_EXTRA=showSum&&showPomega?32:0;
-
   const H=Math.max(320,leafCount*RH+PY*2+SUM_EXTRA);
   const leafAreaH=H-PY*2-SUM_EXTRA;
   const leafY=allPaths.map((_,i)=>PY+i*leafAreaH/Math.max(leafCount-1,1));
-
   const W_base=PX+(depth+1)*CW;
   const W=W_base+COL_SEP+OMEGA_W+(showOmega&&showPomega?8:0)+PROB_W+24;
-
   const nodePos=new Map();
   nodePos.set('ROOT',{x:PX,y:H/2});
-  allPaths.forEach(([path],li)=>{
-    path.forEach((step,d)=>{
-      const key='n'+step.nodeId;
-      if(!nodePos.has(key)){
-        const idxs=allPaths.reduce((acc,[p],idx)=>{if(p[d]&&p[d].nodeId===step.nodeId)acc.push(idx);return acc;},[]);
-        const y=idxs.reduce((a,i)=>a+leafY[i],0)/idxs.length;
-        nodePos.set(key,{x:PX+(d+1)*CW,y});
-      }
-    });
-  });
-
+  allPaths.forEach(([path],li)=>{path.forEach((step,d)=>{const key='n'+step.nodeId;if(!nodePos.has(key)){const idxs=allPaths.reduce((acc,[p],idx)=>{if(p[d]&&p[d].nodeId===step.nodeId)acc.push(idx);return acc;},[]);const y=idxs.reduce((a,i)=>a+leafY[i],0)/idxs.length;nodePos.set(key,{x:PX+(d+1)*CW,y});}});});
   const edges=new Map();
-  allPaths.forEach(([path])=>{
-    path.forEach((step,d)=>{
-      const fk=d===0?'ROOT':'n'+path[d-1].nodeId;
-      const tk='n'+step.nodeId;const ek=fk+'->'+tk;
-      if(!edges.has(ek))edges.set(ek,{fromKey:fk,toKey:tk,label:step.label,probFrac:step.probFrac,overline:step.overline||false,showAstProb:step.showAstProb!==false});
-    });
-  });
-
-  const BGPAD=10;
-  const LBL_W=FS*1.1+BGPAD*2+6;
-  const LBL_H=FS*1.3+BGPAD;
-  const charBL=LBL_H/2-4; // Offset Buchstabenunterkante von Boxmitte
-
+  allPaths.forEach(([path])=>{path.forEach((step,d)=>{const fk=d===0?'ROOT':'n'+path[d-1].nodeId;const tk='n'+step.nodeId;const ek=fk+'->'+tk;if(!edges.has(ek))edges.set(ek,{fromKey:fk,toKey:tk,label:step.label,probFrac:step.probFrac,overline:step.overline||false,showAstProb:step.showAstProb!==false});});});
+  const BGPAD=10,LBL_W=FS*1.1+BGPAD*2+6,LBL_H=FS*1.3+BGPAD,charBL=LBL_H/2-4;
   const lastAstX=PX+depth*CW;
   const omegaX=lastAstX+LBL_W/2+COL_SEP+2;
   const pomegaX=omegaX+OMEGA_W+(showOmega&&showPomega?8:0);
-
   const layerLines=[],layerBg=[],layerText=[],layerCols=[];
-
   const root=nodePos.get('ROOT');
   layerBg.push('<circle cx="'+root.x+'" cy="'+root.y+'" r="6" fill="#e94560"/>');
-
   edges.forEach(e=>{
     const f=nodePos.get(e.fromKey),t=nodePos.get(e.toKey);if(!f||!t)return;
     layerLines.push('<line x1="'+f.x+'" y1="'+f.y+'" x2="'+t.x+'" y2="'+t.y+'" stroke="#1565c0" stroke-width="2.5"/>');
-    // p am Ast: nur wenn globales Flag UND knotenspezifisches Flag aktiv
-    if(showProb&&e.showAstProb){
-      const mx=(f.x+t.x)/2,my=(f.y+t.y)/2;
-      const dx=t.x-f.x,dy=t.y-f.y,len=Math.sqrt(dx*dx+dy*dy)||1;
-      const nx=-dy/len,ny=dx/len;const flip=ny>0?-1:1;
-      const px=mx+nx*16*flip,py=my+ny*16*flip;
-      layerText.push('<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSP+'" fill="#c0392b" font-weight="bold">'+escHtml(fracStr(e.probFrac))+'</text>');
-    }
+    if(showProb&&e.showAstProb){const mx=(f.x+t.x)/2,my=(f.y+t.y)/2;const dx=t.x-f.x,dy=t.y-f.y,len=Math.sqrt(dx*dx+dy*dy)||1;const nx=-dy/len,ny=dx/len;const flip=ny>0?-1:1;const px=mx+nx*16*flip,py=my+ny*16*flip;layerText.push('<text x="'+px+'" y="'+py+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSP+'" fill="#c0392b" font-weight="bold">'+escHtml(fracStr(e.probFrac))+'</text>');}
     layerBg.push('<rect x="'+(t.x-LBL_W/2)+'" y="'+(t.y-LBL_H/2)+'" width="'+LBL_W+'" height="'+LBL_H+'" fill="white" rx="4" stroke="#c8d0e0" stroke-width="1"/>');
     layerText.push(svgChar(e.label,e.overline,t.x,t.y+charBL,FS,'#1565c0',true));
   });
-
   if(showProd){
-    if(showOmega){
-      layerCols.push('<line x1="'+(omegaX-5)+'" y1="'+(PY-30)+'" x2="'+(omegaX-5)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
-      layerCols.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#555">&#x03C9;<tspan dy="3" font-size="11">i</tspan></text>');
-    }
-    if(showPomega){
-      layerCols.push('<line x1="'+(pomegaX-5)+'" y1="'+(PY-30)+'" x2="'+(pomegaX-5)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');
-      layerCols.push('<text x="'+(pomegaX+PROB_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#2e7d32">P({&#x03C9;<tspan dy="3" font-size="11">i</tspan>})</text>');
-    }
+    if(showOmega){layerCols.push('<line x1="'+(omegaX-5)+'" y1="'+(PY-30)+'" x2="'+(omegaX-5)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');layerCols.push('<text x="'+(omegaX+OMEGA_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#555">&#x03C9;<tspan dy="3" font-size="11">i</tspan></text>');}
+    if(showPomega){layerCols.push('<line x1="'+(pomegaX-5)+'" y1="'+(PY-30)+'" x2="'+(pomegaX-5)+'" y2="'+(H-8)+'" stroke="#ccc" stroke-width="1"/>');layerCols.push('<text x="'+(pomegaX+PROB_W/2)+'" y="'+(PY-20)+'" text-anchor="middle" font-size="'+(FSO+1)+'" font-weight="bold" fill="#2e7d32">P({&#x03C9;<tspan dy="3" font-size="11">i</tspan>})</text>');}
   }
-
   let totFrac=fracNew(0,1);
   allPaths.forEach(([path,probFrac,lbls,showPathProb],idx)=>{
-    const ly=leafY[idx];
-    totFrac=fracAdd(totFrac,probFrac);
-    if(showOmega){
-      layerCols.push(svgSequence(lbls,omegaX+OMEGA_W/2,ly+FSO*0.36,FSO,'#333'));
-    }
-    if(showPomega&&showPathProb){
-      layerCols.push('<text x="'+(pomegaX+PROB_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSO+'" font-weight="bold" fill="#2e7d32">'+escHtml(fracToCommonDenom(probFrac,D))+'</text>');
-    }
+    const ly=leafY[idx];totFrac=fracAdd(totFrac,probFrac);
+    if(showOmega)layerCols.push(svgSequence(lbls,omegaX+OMEGA_W/2,ly+FSO*0.36,FSO,'#333'));
+    if(showPomega&&showPathProb)layerCols.push('<text x="'+(pomegaX+PROB_W/2)+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" font-size="'+FSO+'" font-weight="bold" fill="#2e7d32">'+escHtml(fracToCommonDenom(probFrac,D))+'</text>');
   });
-
   if(showPomega&&showSum){
     const sumY=H-8;
     layerCols.push('<line x1="'+(pomegaX-5)+'" y1="'+(sumY-22)+'" x2="'+(pomegaX+PROB_W+5)+'" y2="'+(sumY-22)+'" stroke="#2e7d32" stroke-width="1.5"/>');
@@ -1007,41 +983,81 @@ function drawTreeFromPaths(allPaths,showProb,showOmega,showPomega,showSum){
     document.getElementById('tree-path-sum').textContent='';
   }else if(showSum){
     document.getElementById('tree-path-sum').textContent='Σ P({ωᵢ}) = '+fracStr(totFrac);
-  }else{
-    document.getElementById('tree-path-sum').textContent='';
-  }
+  }else{document.getElementById('tree-path-sum').textContent='';}
 
-  const parts=['<svg id="tree-svg" width="'+W+'" height="'+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">'];
+  // SVG mit viewBox für knappen Export
+  const PAD_EXPORT=10;
+  // Content-Bereich: x von 0 bis W, y von 0 bis H
+  // viewBox knapp ums Content, + Sicherheitsabstand
+  const vbX=-PAD_EXPORT,vbY=Math.max(0,PY-40)-PAD_EXPORT;
+  const vbW=W+PAD_EXPORT*2;
+  const vbH=H-vbY+PAD_EXPORT;
+
+  const parts=[
+    '<svg id="tree-svg" width="'+W+'" height="'+H
+    +'" viewBox="'+vbX+' '+vbY+' '+vbW+' '+vbH
+    +'" xmlns="http://www.w3.org/2000/svg" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">'
+  ];
   parts.push(...layerLines,...layerBg,...layerText,...layerCols);
   parts.push('</svg>');
   document.getElementById('tree-svg-wrap').innerHTML=parts.join('');
 }
 
 // ══════════════════════════════════════════════
-// TREE EXPORT
+// SVG EXPORT – viewBox wird für knappen Schnitt genutzt
 // ══════════════════════════════════════════════
 function exportTreeSVG(){
   const svg=document.getElementById('tree-svg-wrap').querySelector('svg');
   if(!svg){alert('Kein Baum.');return;}
-  let s=svg.outerHTML;
-  if(!s.includes('xmlns'))s=s.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([s],{type:'image/svg+xml;charset=utf-8'}));
-  a.download='baumdiagramm.svg';
+  // Für den Export: viewBox-basierte Größe setzen
+  const vb=svg.getAttribute('viewBox');
+  let exportSvg=svg.outerHTML;
+  if(vb){
+    const [vx,vy,vw,vh]=vb.split(' ').map(Number);
+    // width/height im Export = viewBox-Größe (knapp geschnitten)
+    exportSvg=exportSvg
+      .replace(/width="[^"]*"/,'width="'+vw+'"')
+      .replace(/height="[^"]*"/,'height="'+vh+'"')
+      // viewBox auf 0 0 vw vh setzen (da wir width/height anpassen)
+      .replace(/viewBox="[^"]*"/,'viewBox="0 0 '+vw+' '+vh+'"');
+    // Verschiebung: alle Inhalte via transform
+    exportSvg=exportSvg.replace(
+      /(<svg[^>]*>)/,
+      '$1<g transform="translate('+(-vx)+','+(-vy)+')">'
+    ).replace('</svg>','</g></svg>');
+  }
+  if(!exportSvg.includes('xmlns'))exportSvg=exportSvg.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+  const blob=new Blob([exportSvg],{type:'image/svg+xml;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='baumdiagramm.svg';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
+
 function exportTreePNG(){
   const svg=document.getElementById('tree-svg-wrap').querySelector('svg');
   if(!svg){alert('Kein Baum.');return;}
-  const W=parseInt(svg.getAttribute('width'))||800,H=parseInt(svg.getAttribute('height'))||600;
-  let s=svg.outerHTML;
-  if(!s.includes('xmlns'))s=s.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+  const vb=svg.getAttribute('viewBox');
+  let W,H,exportSvg;
+  if(vb){
+    const[vx,vy,vw,vh]=vb.split(' ').map(Number);
+    W=vw;H=vh;
+    exportSvg=svg.outerHTML
+      .replace(/width="[^"]*"/,'width="'+vw+'"')
+      .replace(/height="[^"]*"/,'height="'+vh+'"')
+      .replace(/viewBox="[^"]*"/,'viewBox="0 0 '+vw+' '+vh+'"')
+      .replace(/(<svg[^>]*>)/,'$1<g transform="translate('+(-vx)+','+(-vy)+')">')
+      .replace('</svg>','</g></svg>');
+  }else{
+    W=parseInt(svg.getAttribute('width'))||800;
+    H=parseInt(svg.getAttribute('height'))||600;
+    exportSvg=svg.outerHTML;
+  }
+  if(!exportSvg.includes('xmlns'))exportSvg=exportSvg.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
   const scale=2;
   const cv=document.createElement('canvas');cv.width=W*scale;cv.height=H*scale;
   const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);ctx.scale(scale,scale);
   const img=new Image();
-  const url=URL.createObjectURL(new Blob([s],{type:'image/svg+xml;charset=utf-8'}));
+  const url=URL.createObjectURL(new Blob([exportSvg],{type:'image/svg+xml;charset=utf-8'}));
   img.onload=()=>{ctx.drawImage(img,0,0);URL.revokeObjectURL(url);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';document.body.appendChild(a);a.click();document.body.removeChild(a);};
   img.onerror=()=>{URL.revokeObjectURL(url);alert('PNG-Export fehlgeschlagen.');};
   img.src=url;
