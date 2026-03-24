@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wissenschaftlicher Taschenrechner</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);min-height:100vh;color:#eee;padding:20px}
+h1{text-align:center;color:#e94560;margin-bottom:18px;font-size:1.7rem;letter-spacing:2px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px}
+.tab-btn{background:#16213e;border:2px solid #e94560;color:#eee;padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.9rem;transition:all .2s}
+.tab-btn.active,.tab-btn:hover{background:#e94560;color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.calc-wrap{max-width:420px;margin:0 auto}
+.display-box{background:#0d0d1a;border-radius:12px;padding:16px 18px;margin-bottom:12px;border:1px solid #e94560}
+#expr-display{font-size:.85rem;color:#aaa;min-height:20px;word-break:break-all;text-align:right}
+#main-display{font-size:2.2rem;color:#e94560;text-align:right;word-break:break-all;min-height:44px}
+.mode-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.mode-toggle{background:#16213e;border:2px solid #e94560;color:#e94560;padding:5px 14px;border-radius:14px;cursor:pointer;font-size:.85rem}
+.mode-toggle:hover{background:#e94560;color:#fff}
+.btn-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.btn{background:#16213e;border:1px solid #253a5e;color:#eee;padding:14px 6px;border-radius:10px;cursor:pointer;font-size:.95rem;transition:all .15s;text-align:center;user-select:none}
+.btn:hover{background:#253a5e;transform:scale(1.04)}.btn:active{transform:scale(.97)}
+.btn.op{color:#e94560;border-color:#e94560}.btn.fn{color:#4fc3f7;border-color:#4fc3f7}
+.btn.eq{background:#e94560;color:#fff;border-color:#e94560;font-size:1.1rem}.btn.eq:hover{background:#c0392b}
+.btn.clr{color:#ff8a65;border-color:#ff8a65}.btn.zero{grid-column:span 2}
+.panel{background:#16213e;border-radius:14px;padding:22px;max-width:860px;margin:0 auto;border:1px solid #253a5e}
+.panel h2{color:#e94560;margin-bottom:14px;font-size:1.2rem}
+.form-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+label{font-size:.9rem;color:#aaa}
+input[type="number"],input[type="text"]{background:#0d0d1a;border:1px solid #253a5e;color:#eee;padding:7px 11px;border-radius:8px;font-size:.95rem;outline:none}
+input[type="number"]{width:90px}input[type="text"]{width:220px}
+input:focus{border-color:#e94560}
+.action-btn{background:#e94560;border:none;color:#fff;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:.9rem;transition:background .2s}
+.action-btn:hover{background:#c0392b}
+.export-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.exp-btn{border:none;padding:7px 16px;border-radius:9px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .18s}
+.exp-btn:hover{opacity:.85;transform:scale(1.03)}
+.exp-svg{background:#4fc3f7;color:#000}.exp-png{background:#a8e063;color:#000}
+.mini-kbd{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;background:#0d1a2e;border:1px solid #253a5e;border-radius:10px;padding:8px}
+.mk{background:#16213e;border:1px solid #253a5e;color:#4fc3f7;padding:5px 10px;border-radius:7px;cursor:pointer;font-size:.82rem;user-select:none;transition:all .15s}
+.mk:hover{background:#4fc3f7;color:#000}.mk.op-k{color:#e94560;border-color:#e94560}.mk.op-k:hover{background:#e94560;color:#fff}
+.formula-input{width:100%;background:#0d0d1a;border:1px solid #4fc3f7;color:#fff;padding:10px 14px;border-radius:10px;font-size:1rem;outline:none;font-family:'Courier New',monospace}
+.formula-input:focus{border-color:#e94560}
+.result-box{background:#0d0d1a;border-radius:10px;padding:14px;margin-top:10px;border:1px solid #253a5e;max-height:260px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{color:#e94560;padding:6px 10px;border-bottom:1px solid #253a5e;text-align:left}
+td{padding:5px 10px;border-bottom:1px solid #1a2a4a;color:#ddd}
+tr:hover td{background:#1a2a4a}
+.chart-container{position:relative;margin-top:14px;background:#fff;border-radius:10px;border:2px solid #aaa;overflow:hidden}
+.chart-container canvas{width:100%!important;display:block}
+.info{font-size:.82rem;color:#aaa;margin-top:4px}
+.error-msg{background:#3a0a0a;border:1px solid #e94560;color:#ff8a8a;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:.9rem}
+.hl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;align-items:center}
+.hl-btn{border:2px solid;padding:4px 12px;border-radius:14px;cursor:pointer;font-size:.83rem;background:transparent;transition:all .2s}
+.hl-btn.hl-eq{border-color:#f9a825;color:#f9a825}.hl-btn.hl-le{border-color:#4fc3f7;color:#4fc3f7}
+.hl-btn.hl-rng{border-color:#a8e063;color:#a8e063}.hl-btn.hl-none{border-color:#888;color:#888}
+.hl-btn.active.hl-eq{background:#f9a825;color:#000}.hl-btn.active.hl-le{background:#4fc3f7;color:#000}
+.hl-btn.active.hl-rng{background:#a8e063;color:#000}.hl-btn.active.hl-none{background:#888;color:#fff}
+.tree-mode-btn{border:2px solid;padding:7px 18px;border-radius:14px;cursor:pointer;font-size:.9rem;background:transparent;transition:all .2s}
+.tree-mode-btn.tm-manual{border-color:#f9a825;color:#f9a825}.tree-mode-btn.tm-binom{border-color:#4fc3f7;color:#4fc3f7}.tree-mode-btn.tm-urn{border-color:#a8e063;color:#a8e063}
+.tree-mode-btn.active.tm-manual{background:#f9a825;color:#000}.tree-mode-btn.active.tm-binom{background:#4fc3f7;color:#000}.tree-mode-btn.active.tm-urn{background:#a8e063;color:#000}
+</style>
+</head>
+<body>
+<h1>🔢 Wissenschaftlicher Taschenrechner</h1>
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('calc',this)">Rechner</button>
+  <button class="tab-btn" onclick="showTab('table',this)">Wertetabelle</button>
+  <button class="tab-btn" onclick="showTab('binom',this)">Binomialverteilung</button>
+  <button class="tab-btn" onclick="showTab('stab',this)">Stabdiagramm</button>
+  <button class="tab-btn" onclick="showTab('hist',this)">Histogramm</button>
+  <button class="tab-btn" onclick="showTab('graph',this)">Graphenplotter</button>
+  <button class="tab-btn" onclick="showTab('tree',this)">Baumdiagramm</button>
+</div>
+
+<!-- RECHNER -->
+<div id="tab-calc" class="tab-content active">
+<div class="calc-wrap">
+  <div class="display-box">
+    <div id="expr-display"></div>
+    <div id="main-display">0</div>
+  </div>
+  <div class="mode-row">
+    <button class="mode-toggle" onclick="toggleAngle()">Modus: <span id="angle-mode">DEG</span></button>
+    <span style="font-size:.8rem;color:#aaa">Tastatur aktiv ✓</span>
+  </div>
+  <div class="btn-grid">
+    <button class="btn fn" onclick="calcInput('sin(')">sin</button>
+    <button class="btn fn" onclick="calcInput('cos(')">cos</button>
+    <button class="btn fn" onclick="calcInput('tan(')">tan</button>
+    <button class="btn fn" onclick="calcInput('asin(')">sin⁻¹</button>
+    <button class="btn fn" onclick="calcInput('acos(')">cos⁻¹</button>
+    <button class="btn fn" onclick="calcInput('atan(')">tan⁻¹</button>
+    <button class="btn fn" onclick="calcInput('log(')">log</button>
+    <button class="btn fn" onclick="calcInput('ln(')">ln</button>
+    <button class="btn fn" onclick="calcInput('sqrt(')">√</button>
+    <button class="btn fn" onclick="calcInput('exp(')">eˣ</button>
+    <button class="btn fn" onclick="calcInput('^')">xʸ</button>
+    <button class="btn fn" onclick="calcInput('(')">(</button>
+    <button class="btn fn" onclick="calcInput(')')">)</button>
+    <button class="btn fn" onclick="calcInput('pi')">π</button>
+    <button class="btn fn" onclick="calcInput('e')">e</button>
+    <button class="btn clr" onclick="calcClear()">C</button>
+    <button class="btn clr" onclick="calcBack()">⌫</button>
+    <button class="btn op" onclick="calcInput('%')">%</button>
+    <button class="btn op" onclick="calcInput('/')">÷</button>
+    <button class="btn op" onclick="calcInput('*')">×</button>
+    <button class="btn" onclick="calcInput('7')">7</button>
+    <button class="btn" onclick="calcInput('8')">8</button>
+    <button class="btn" onclick="calcInput('9')">9</button>
+    <button class="btn op" onclick="calcInput('-')">−</button>
+    <button class="btn op" onclick="calcInput('+')">+</button>
+    <button class="btn" onclick="calcInput('4')">4</button>
+    <button class="btn" onclick="calcInput('5')">5</button>
+    <button class="btn" onclick="calcInput('6')">6</button>
+    <button class="btn fn" onclick="calcInput('abs(')">|x|</button>
+    <button class="btn eq" onclick="calcEval()" style="grid-row:span 2">=</button>
+    <button class="btn" onclick="calcInput('1')">1</button>
+    <button class="btn" onclick="calcInput('2')">2</button>
+    <button class="btn" onclick="calcInput('3')">3</button>
+    <button class="btn fn" onclick="calcInput('1/')">1/x</button>
+    <button class="btn zero" onclick="calcInput('0')">0</button>
+    <button class="btn" onclick="calcInput('.')">.</button>
+    <button class="btn fn" onclick="calcNeg()">+/−</button>
+  </div>
+</div></div>
+
+<!-- WERTETABELLE -->
+<div id="tab-table" class="tab-content">
+<div class="panel">
+  <h2>📋 Wertetabelle</h2>
+  <div class="mini-kbd" id="wt-kbd"></div>
+  <input class="formula-input" id="wt-func" value="x^2" placeholder="f(x) = …" oninput="buildTable()">
+  <div class="form-row" style="margin-top:10px">
+    <label>Von x=</label><input type="number" id="wt-from" value="-5" style="width:75px" oninput="buildTable()">
+    <label>bis x=</label><input type="number" id="wt-to" value="5" style="width:75px" oninput="buildTable()">
+    <label>Schritt</label><input type="number" id="wt-step" value="1" step="0.1" style="width:75px" oninput="buildTable()">
+  </div>
+  <p class="info">Erlaubt: + − * / ^ sin cos tan log ln sqrt exp abs pi e</p>
+  <div id="wt-error"></div>
+  <div class="result-box" id="wt-result"></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportTableCSV()">💾 CSV</button>
+    <button class="exp-btn exp-png" onclick="exportTablePNG()">🖼️ PNG</button>
+  </div>
+</div></div>
+
+<!-- BINOMIALVERTEILUNG -->
+<div id="tab-binom" class="tab-content">
+<div class="panel">
+  <h2>🎲 Binomialverteilung B(n, p)</h2>
+  <div class="form-row">
+    <label>n =</label><input type="number" id="bn-n" value="10" min="1" max="300" style="width:75px" oninput="binomLive()">
+    <label>p =</label><input type="number" id="bn-p" value="0.5" min="0" max="1" step="0.01" style="width:85px" oninput="binomLive()">
+  </div>
+  <div class="form-row">
+    <label style="color:#f9a825">P(X = k): k =</label>
+    <input type="number" id="bn-k-eq" value="5" min="0" style="width:65px" oninput="setHL('eq');binomLive()">
+  </div>
+  <div class="form-row">
+    <label style="color:#4fc3f7">P(X ≤ k): k =</label>
+    <input type="number" id="bn-k-le" value="5" min="0" style="width:65px" oninput="setHL('le');binomLive()">
+  </div>
+  <div class="form-row">
+    <label style="color:#a8e063">P(k₁ ≤ X ≤ k₂): k₁ =</label>
+    <input type="number" id="bn-k1" value="3" min="0" style="width:60px" oninput="setHL('rng');binomLive()">
+    <label style="color:#a8e063">k₂ =</label>
+    <input type="number" id="bn-k2" value="7" min="0" style="width:60px" oninput="setHL('rng');binomLive()">
+  </div>
+  <div class="hl-row">
+    <span style="color:#aaa;font-size:.85rem">Hervorhebung:</span>
+    <button class="hl-btn hl-eq active" id="hl-eq" onclick="setHL('eq');binomLive()">P(X=k)</button>
+    <button class="hl-btn hl-le" id="hl-le" onclick="setHL('le');binomLive()">P(X≤k)</button>
+    <button class="hl-btn hl-rng" id="hl-rng" onclick="setHL('rng');binomLive()">P(k₁≤X≤k₂)</button>
+    <button class="hl-btn hl-none" id="hl-none" onclick="setHL('none');binomLive()">Keine</button>
+  </div>
+  <div class="result-box" id="binom-result"></div>
+  <div class="chart-container"><canvas id="binom-chart" height="350"></canvas></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportChartPNG('binom-chart','binomialverteilung')">💾 SVG</button>
+    <button class="exp-btn exp-png" onclick="exportChartPNG('binom-chart','binomialverteilung')">🖼️ PNG</button>
+    <button class="exp-btn" style="background:#f9a825;color:#000" onclick="exportBinomCSV()">📊 CSV</button>
+  </div>
+</div></div>
+
+<!-- STABDIAGRAMM -->
+<div id="tab-stab" class="tab-content">
+<div class="panel">
+  <h2>📊 Stabdiagramm</h2>
+  <div class="form-row">
+    <label>Werte x:</label>
+    <input type="text" id="stab-x" value="-5, -2, 0, 3, 7" style="width:340px" oninput="drawStab()">
+  </div>
+  <div class="form-row">
+    <label>P(X=x)/h:</label>
+    <input type="text" id="stab-p" value="0.1, 0.2, 0.4, 0.2, 0.1" style="width:340px" oninput="drawStab()">
+  </div>
+  <div class="form-row">
+    <label>Y-Achse:</label>
+    <input type="text" id="stab-ylabel" value="P(X = x)" style="width:150px" oninput="drawStab()">
+    <label style="margin-left:12px">Typ:</label>
+    <select id="stab-type" onchange="drawStab()" style="background:#0d0d1a;border:1px solid #253a5e;color:#eee;padding:6px 10px;border-radius:8px;font-size:.9rem">
+      <option value="prob">Wahrscheinlichkeitsverteilung (Σ=1)</option>
+      <option value="freq">Häufigkeitsverteilung (beliebig)</option>
+    </select>
+  </div>
+  <div id="stab-error"></div>
+  <div id="stab-stats" class="result-box" style="display:none"></div>
+  <div class="chart-container"><canvas id="stab-chart" height="350"></canvas></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportChartPNG('stab-chart','stabdiagramm')">💾 SVG</button>
+    <button class="exp-btn exp-png" onclick="exportChartPNG('stab-chart','stabdiagramm')">🖼️ PNG</button>
+  </div>
+</div></div>
+
+<!-- HISTOGRAMM -->
+<div id="tab-hist" class="tab-content">
+<div class="panel">
+  <h2>📈 Histogramm</h2>
+  <div class="form-row">
+    <label>Klassengrenzen:</label>
+    <input type="text" id="hist-bounds" value="0, 10, 20, 40, 50" style="width:300px" oninput="drawHist()">
+  </div>
+  <div class="form-row">
+    <label>Häufigkeiten h:</label>
+    <input type="text" id="hist-freq" value="5, 15, 20, 10" style="width:300px" oninput="drawHist()">
+  </div>
+  <div id="hist-error"></div>
+  <div id="hist-result" class="result-box" style="display:none"></div>
+  <div class="chart-container"><canvas id="hist-chart" height="350"></canvas></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportChartPNG('hist-chart','histogramm')">💾 SVG</button>
+    <button class="exp-btn exp-png" onclick="exportChartPNG('hist-chart','histogramm')">🖼️ PNG</button>
+    <button class="exp-btn" style="background:#f9a825;color:#000" onclick="exportHistCSV()">📊 CSV</button>
+  </div>
+</div></div>
+
+<!-- GRAPHENPLOTTER -->
+<div id="tab-graph" class="tab-content">
+<div class="panel">
+  <h2>📉 Graphenplotter</h2>
+  <div class="mini-kbd" id="graph-kbd"></div>
+  <div id="graph-funcs">
+    <div class="form-row graph-func-row" data-id="0">
+      <label>f₁(x) =</label>
+      <input type="text" class="graph-expr" id="graph-expr-0" value="x^3 - 2*x + 1" style="width:240px" oninput="drawGraph()">
+      <input type="color" class="graph-color" value="#e94560" oninput="drawGraph()">
+    </div>
+  </div>
+  <div class="form-row">
+    <button class="action-btn" onclick="addGraphFunc()" style="background:#4fc3f7">+ Funktion</button>
+    <button class="action-btn" onclick="removeGraphFunc()" style="background:#555">− Funktion</button>
+  </div>
+  <div class="form-row">
+    <label>x von</label><input type="number" id="graph-xmin" value="-5" style="width:70px" oninput="drawGraph()">
+    <label>bis</label><input type="number" id="graph-xmax" value="5" style="width:70px" oninput="drawGraph()">
+    <label>Punkte</label><input type="number" id="graph-pts" value="600" min="50" max="2000" style="width:80px" oninput="drawGraph()">
+  </div>
+  <p class="info">Ganzrationale: x^3+2*x−1 | Exponential: exp(x) | Trig: sin(x)</p>
+  <div class="chart-container"><canvas id="graph-chart" height="400"></canvas></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportChartPNG('graph-chart','graphenplotter')">💾 SVG</button>
+    <button class="exp-btn exp-png" onclick="exportChartPNG('graph-chart','graphenplotter')">🖼️ PNG</button>
+  </div>
+</div></div>
+
+<!-- BAUMDIAGRAMM -->
+<div id="tab-tree" class="tab-content">
+<div class="panel" style="max-width:1100px">
+  <h2>🌳 Baumdiagramm</h2>
+  <div class="form-row" style="gap:10px;margin-bottom:16px">
+    <button class="tree-mode-btn tm-manual active" id="tree-mode-manual" onclick="setTreeMode('manual')">✏️ Manuell</button>
+    <button class="tree-mode-btn tm-binom" id="tree-mode-binom" onclick="setTreeMode('binom')">🎲 Binomialverteilt</button>
+    <button class="tree-mode-btn tm-urn" id="tree-mode-urn" onclick="setTreeMode('urn')">⚱️ Urnenmodell</button>
+  </div>
+  <div id="tree-panel-manual">
+    <div class="form-row" style="align-items:flex-start;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="color:#aaa;font-size:.85rem">Stufen:</span>
+        <div style="display:flex;gap:6px">
+          <button class="action-btn" onclick="manualAddLevel()" style="padding:6px 14px">+ Stufe</button>
+          <button class="action-btn" onclick="manualRemoveLevel()" style="background:#555;padding:6px 14px">− Stufe</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-left:10px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="tree-show-prod" checked onchange="renderTree()">
+          <span style="color:#eee;font-size:.88rem">Pfadwahrscheinlichkeiten</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="tree-show-sum" checked onchange="renderTree()">
+          <span style="color:#eee;font-size:.88rem">Summe der Pfade</span>
+        </label>
+      </div>
+    </div>
+    <div id="tree-level-editor" style="margin-top:12px"></div>
+    <div id="tree-manual-error" style="margin-top:6px"></div>
+  </div>
+  <div id="tree-panel-binom" style="display:none">
+    <div class="form-row">
+      <label>Stufen n=</label><input type="number" id="tb-n" value="3" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
+      <label>p=</label><input type="number" id="tb-p" value="0.4" min="0" max="1" step="0.01" style="width:80px" oninput="buildAutoTree()">
+      <label>Treffer:</label><input type="text" id="tb-hit" value="T" style="width:55px" oninput="buildAutoTree()">
+      <label>Niete:</label><input type="text" id="tb-miss" value="N" style="width:55px" oninput="buildAutoTree()">
+    </div>
+    <div class="form-row">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="tb-show-prod" checked onchange="buildAutoTree()">
+        <span style="color:#eee;font-size:.88rem">Pfadwahrscheinlichkeiten</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
+        <input type="checkbox" id="tb-show-sum" checked onchange="buildAutoTree()">
+        <span style="color:#eee;font-size:.88rem">Summe</span>
+      </label>
+    </div>
+  </div>
+  <div id="tree-panel-urn" style="display:none">
+    <div class="form-row">
+      <label>Rote R=</label><input type="number" id="tu-r" value="3" min="0" style="width:65px" oninput="buildAutoTree()">
+      <label>Blaue B=</label><input type="number" id="tu-b" value="2" min="0" style="width:65px" oninput="buildAutoTree()">
+      <label>Züge k=</label><input type="number" id="tu-k" value="2" min="1" max="6" style="width:65px" oninput="buildAutoTree()">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:6px">
+        <input type="checkbox" id="tu-replace" onchange="buildAutoTree()">
+        <span style="color:#eee;font-size:.88rem">Mit Zurücklegen</span>
+      </label>
+    </div>
+    <div class="form-row">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="tu-show-prod" checked onchange="buildAutoTree()">
+        <span style="color:#eee;font-size:.88rem">Pfadwahrscheinlichkeiten</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:12px">
+        <input type="checkbox" id="tu-show-sum" checked onchange="buildAutoTree()">
+        <span style="color:#eee;font-size:.88rem">Summe</span>
+      </label>
+    </div>
+    <div id="tu-error"></div>
+  </div>
+  <div id="tree-svg-wrap" style="margin-top:16px;background:#fff;border-radius:10px;border:2px solid #aaa;overflow-x:auto;min-height:180px">
+    <svg id="tree-svg" style="display:block;font-family:'Segoe UI',sans-serif"></svg>
+  </div>
+  <div id="tree-path-sum" style="margin-top:8px;font-size:.95rem;color:#a8e063;font-weight:600"></div>
+  <div class="export-row">
+    <button class="exp-btn exp-svg" onclick="exportTreeSVG()">💾 SVG</button>
+    <button class="exp-btn exp-png" onclick="exportTreePNG()">🖼️ PNG</button>
+  </div>
+</div></div>
+
+<script>
+// ─────────────────────────────────────────────
+// HILFSFUNKTIONEN
+// ─────────────────────────────────────────────
+function showTab(n,b){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  if(b)b.classList.add('active');
+}
+let angleMode='DEG';
+function toggleAngle(){angleMode=angleMode==='DEG'?'RAD':'DEG';document.getElementById('angle-mode').textContent=angleMode;}
+const toRad=v=>angleMode==='DEG'?v*Math.PI/180:v;
+const toDeg=v=>angleMode==='DEG'?v*180/Math.PI:v;
+
+function safeEval(expr){
+  let e=expr.replace(/\^/g,'**').replace(/\bpi\b/g,'Math.PI').replace(/\be\b/g,'Math.E')
+    .replace(/\bsin\(/g,'_sin(').replace(/\bcos\(/g,'_cos(').replace(/\btan\(/g,'_tan(')
+    .replace(/\basin\(/g,'_asin(').replace(/\bacos\(/g,'_acos(').replace(/\batan\(/g,'_atan(')
+    .replace(/\blog\(/g,'Math.log10(').replace(/\bln\(/g,'Math.log(')
+    .replace(/\bsqrt\(/g,'Math.sqrt(').replace(/\bexp\(/g,'Math.exp(').replace(/\babs\(/g,'Math.abs(');
+  const _sin=v=>Math.sin(toRad(v)),_cos=v=>Math.cos(toRad(v)),_tan=v=>Math.tan(toRad(v));
+  const _asin=v=>toDeg(Math.asin(v)),_acos=v=>toDeg(Math.acos(v)),_atan=v=>toDeg(Math.atan(v));
+  return Function('"use strict";const _sin=arguments[0],_cos=arguments[1],_tan=arguments[2],_asin=arguments[3],_acos=arguments[4],_atan=arguments[5];return '+e)(_sin,_cos,_tan,_asin,_acos,_atan);
+}
+function safeEvalX(e,x){return safeEval(e.replace(/\bx\b/g,'('+x+')'));}
+function roundDisp(v){return isFinite(v)?String(parseFloat(v.toPrecision(12))):'Fehler';}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtTick(v){
+  if(Math.abs(v)<1e-10)return'0';
+  if(Math.abs(v)>=10000||Math.abs(v)<0.001)return v.toExponential(1);
+  return String(parseFloat(v.toPrecision(5)));
+}
+
+// ─────────────────────────────────────────────
+// MINI-TASTATUR
+// ─────────────────────────────────────────────
+const MKB=[
+  {l:'sin()',i:'sin('},{l:'cos()',i:'cos('},{l:'tan()',i:'tan('},
+  {l:'ln()',i:'ln('},{l:'log()',i:'log('},{l:'√()',i:'sqrt('},
+  {l:'eˣ',i:'exp('},{l:'xʸ',i:'^'},{l:'|x|',i:'abs('},
+  {l:'π',i:'pi'},{l:'e',i:'e'},{l:'(',i:'('},{l:')',i:')'},
+  {l:'1/x',i:'1/('},
+  {l:'+',i:'+',c:'op-k'},{l:'−',i:'-',c:'op-k'},
+  {l:'×',i:'*',c:'op-k'},{l:'÷',i:'/',c:'op-k'},
+  {l:'⌫',i:'__back__',c:'op-k'}
+];
+function buildMiniKbd(cid,getInp){
+  const w=document.getElementById(cid);if(!w)return;w.innerHTML='';
+  MKB.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.className='mk'+(b.c?' '+b.c:'');btn.textContent=b.l;btn.type='button';
+    btn.addEventListener('mousedown',ev=>{
+      ev.preventDefault();const inp=getInp();if(!inp)return;
+      inp.focus();const s=inp.selectionStart,en=inp.selectionEnd;
+      if(b.i==='__back__'){
+        if(s===en&&s>0){inp.value=inp.value.slice(0,s-1)+inp.value.slice(en);inp.setSelectionRange(s-1,s-1);}
+        else{inp.value=inp.value.slice(0,s)+inp.value.slice(en);inp.setSelectionRange(s,s);}
+      }else{inp.value=inp.value.slice(0,s)+b.i+inp.value.slice(en);inp.setSelectionRange(s+b.i.length,s+b.i.length);}
+      inp.dispatchEvent(new Event('input'));
+    });
+    w.appendChild(btn);
+  });
+}
+let lastGraphInput=null;
+document.addEventListener('focusin',e=>{if(e.target.classList.contains('graph-expr'))lastGraphInput=e.target;});
+
+// ─────────────────────────────────────────────
+// CHART PLUGINS  (als Funktionen – kein globales Objekt mit fester id)
+// ─────────────────────────────────────────────
+
+// Karopapier
+function makeGridPlugin(){
+  return {
+    id:'gridPaper_'+Math.random().toString(36).slice(2),
+    beforeDraw(chart){
+      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
+      if(!scales.x||!scales.y)return;
+      ctx.save();
+      ctx.fillStyle='#fff';ctx.fillRect(left,top,right-left,bottom-top);
+      const x0=Math.max(left,Math.min(right,scales.x.getPixelForValue(0)));
+      const y0=Math.max(top,Math.min(bottom,scales.y.getPixelForValue(0)));
+      function niceStep(range,target,px){
+        const r=px/range,raw=target/r,mag=Math.pow(10,Math.floor(Math.log10(raw)));
+        for(const c of[1,2,2.5,5,10])if(c*mag>=raw)return c*mag;return mag;
+      }
+      const xs=niceStep(scales.x.max-scales.x.min,22,right-left);
+      const ys=niceStep(scales.y.max-scales.y.min,22,bottom-top);
+      function lX(col,lw,step){
+        ctx.strokeStyle=col;ctx.lineWidth=lw;
+        const o=scales.x.getValueForPixel(x0);
+        for(let v=0;;v+=step){const p=scales.x.getPixelForValue(o+v);if(p>right+1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}
+        for(let v=step;;v+=step){const p=scales.x.getPixelForValue(o-v);if(p<left-1)break;ctx.beginPath();ctx.moveTo(p,top);ctx.lineTo(p,bottom);ctx.stroke();}
+      }
+      function lY(col,lw,step){
+        ctx.strokeStyle=col;ctx.lineWidth=lw;
+        const o=scales.y.getValueForPixel(y0);
+        for(let v=0;;v+=step){const p=scales.y.getPixelForValue(o+v);if(p<top-1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}
+        for(let v=step;;v+=step){const p=scales.y.getPixelForValue(o-v);if(p>bottom+1)break;ctx.beginPath();ctx.moveTo(left,p);ctx.lineTo(right,p);ctx.stroke();}
+      }
+      lX('#cce0ff',.5,xs);lY('#cce0ff',.5,ys);
+      lX('#99c2ff',1,xs*5);lY('#99c2ff',1,ys*5);
+      ctx.restore();
+    }
+  };
+}
+
+// Achsenpfeile + Ticks
+function makeArrowPlugin(xLbl,yLbl){
+  return {
+    id:'axisArrows_'+Math.random().toString(36).slice(2),
+    afterDraw(chart){
+      const{ctx,chartArea:{left,top,right,bottom},scales}=chart;
+      if(!scales.x||!scales.y)return;
+      ctx.save();
+      const rx0=scales.x.getPixelForValue(0),ry0=scales.y.getPixelForValue(0);
+      const xY=Math.max(top,Math.min(bottom,ry0));
+      const yX=Math.max(left,Math.min(right,rx0));
+      const aL=14,aW=7;
+      ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=2;
+      // X-Achse
+      ctx.beginPath();ctx.moveTo(left,xY);ctx.lineTo(right+aL,xY);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(right+aL,xY);ctx.lineTo(right,xY-aW);ctx.lineTo(right,xY+aW);ctx.closePath();ctx.fill();
+      // Y-Achse
+      ctx.beginPath();ctx.moveTo(yX,bottom);ctx.lineTo(yX,top-aL);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(yX,top-aL);ctx.lineTo(yX-aW,top-aL+aL);ctx.lineTo(yX+aW,top-aL+aL);ctx.closePath();ctx.fill();
+      // Beschriftungen
+      ctx.font='bold 14px Segoe UI';ctx.fillStyle='#111';
+      ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(xLbl||'x',right+2,xY-aW);
+      ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(yLbl||'y',yX+aW+3,top-aL+2);
+      // Ticks
+      const MARGIN=32,BOTTOM_CLEAR=20;
+      ctx.font='13px Segoe UI';ctx.strokeStyle='#333';ctx.fillStyle='#333';ctx.lineWidth=1.5;
+      // X-Ticks
+      ctx.textAlign='center';ctx.textBaseline='top';
+      // Ticks manuell generieren (da ticks-Array bei leerem dataset leer ist)
+      const xTicks=getAxisTicks(scales.x);
+      xTicks.forEach(v=>{
+        const px=scales.x.getPixelForValue(v);
+        if(px<left||px>right||px<left+MARGIN||px>right-MARGIN)return;
+        ctx.beginPath();ctx.moveTo(px,xY-5);ctx.lineTo(px,xY+5);ctx.stroke();
+        if(Math.abs(v)<1e-10&&rx0>=left&&rx0<=right)return;
+        const ly=Math.min(xY+8,bottom-BOTTOM_CLEAR);
+        ctx.fillText(fmtTick(v),px,ly);
+      });
+      // Y-Ticks
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      const yTicks=getAxisTicks(scales.y);
+      yTicks.forEach(v=>{
+        const py=scales.y.getPixelForValue(v);
+        if(py<top||py>bottom||py<top+MARGIN||py>bottom-MARGIN)return;
+        ctx.beginPath();ctx.moveTo(yX-5,py);ctx.lineTo(yX+5,py);ctx.stroke();
+        if(Math.abs(v)<1e-10&&ry0>=top&&ry0<=bottom)return;
+        ctx.fillText(fmtTick(v),yX-8,py);
+      });
+      ctx.restore();
+    }
+  };
+}
+
+// Ticks selbst berechnen (unabhängig von Chart.js ticks-Array)
+function getAxisTicks(scale){
+  const range=scale.max-scale.min;
+  const mag=Math.pow(10,Math.floor(Math.log10(range/5)));
+  let step=mag;
+  for(const c of[1,2,2.5,5,10]){if(c*mag*4>=range){step=c*mag;break;}}
+  const ticks=[];
+  const start=Math.ceil(scale.min/step)*step;
+  for(let v=start;v<=scale.max+1e-10;v+=step)ticks.push(Math.round(v*1e10)/1e10);
+  return ticks;
+}
+
+function makeScales(xMin,xMax,yMin,yMax){
+  return{
+    x:{type:'linear',min:xMin,max:xMax,ticks:{display:false},grid:{display:false},border:{display:false},title:{display:false}},
+    y:{min:yMin,max:yMax,ticks:{display:false},grid:{display:false},border:{display:false},title:{display:false}}
+  };
+}
+const CPAD={right:48,top:34,left:18,bottom:30};
+
+// ─────────────────────────────────────────────
+// EXPORT
+// ─────────────────────────────────────────────
+function exportChartPNG(cid,fname){
+  const cv=document.getElementById(cid);if(!cv){alert('Kein Diagramm.');return;}
+  const out=document.createElement('canvas');out.width=cv.width;out.height=cv.height;
+  const c=out.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,out.width,out.height);c.drawImage(cv,0,0);
+  const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download=(fname||'diagramm')+'.png';a.click();
+}
+function exportTableCSV(){
+  const expr=document.getElementById('wt-func').value.trim();
+  const from=parseFloat(document.getElementById('wt-from').value);
+  const to=parseFloat(document.getElementById('wt-to').value);
+  const step=parseFloat(document.getElementById('wt-step').value);
+  if(!expr||isNaN(from)||isNaN(to)||isNaN(step)||step<=0||from>to)return;
+  let csv='x;f(x)\n';
+  for(let x=from;x<=to+1e-9;x+=step){x=Math.round(x*1e10)/1e10;let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}csv+=x+';'+fx+'\n';}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wertetabelle.csv';a.click();
+}
+function exportTablePNG(){
+  const res=document.getElementById('wt-result');
+  if(!res||!res.innerHTML){alert('Keine Tabelle.');return;}
+  const rows=[...res.querySelectorAll('tr')];if(!rows.length)return;
+  const cols=rows[0].querySelectorAll('th,td').length;
+  const CW=140,RH=28,PAD=16,W=cols*CW+PAD*2,H=rows.length*RH+PAD*2;
+  const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;
+  const c=cv.getContext('2d');c.scale(2,2);c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  rows.forEach((row,ri)=>{
+    [...row.querySelectorAll('th,td')].forEach((cell,ci)=>{
+      const x=PAD+ci*CW,y=PAD+ri*RH;
+      c.fillStyle=ri===0?'#e94560':ri%2===0?'#f5f5f5':'#fff';c.fillRect(x,y,CW,RH);
+      c.strokeStyle='#ddd';c.lineWidth=.5;c.strokeRect(x,y,CW,RH);
+      c.fillStyle=ri===0?'#fff':'#222';c.font=ri===0?'bold 13px Segoe UI':'13px Segoe UI';
+      c.textBaseline='middle';c.textAlign='center';c.fillText(cell.textContent,x+CW/2,y+RH/2);
+    });
+  });
+  const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='wertetabelle.png';a.click();
+}
+function exportBinomCSV(){
+  const n=parseInt(document.getElementById('bn-n').value);
+  const p=parseFloat(document.getElementById('bn-p').value);
+  if(isNaN(n)||isNaN(p))return;
+  let csv='k;P(X=k);P(X<=k)\n';
+  for(let k=0;k<=n;k++)csv+=k+';'+binomPDF(n,p,k).toFixed(8)+';'+binomCDF(n,p,k).toFixed(8)+'\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='binom.csv';a.click();
+}
+function exportHistCSV(){
+  const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
+  const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));
+  if(bounds.length!==freqs.length+1)return;
+  const total=freqs.reduce((a,b)=>a+b,0);
+  let csv='von;bis;Breite;h;rel.h;Dichte\n';
+  freqs.forEach((_,i)=>{const w=bounds[i+1]-bounds[i];csv+=bounds[i]+';'+bounds[i+1]+';'+w+';'+freqs[i]+';'+(freqs[i]/total).toFixed(6)+';'+(freqs[i]/w).toFixed(6)+'\n';});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='histogramm.csv';a.click();
+}
+
+// ─────────────────────────────────────────────
+// TASCHENRECHNER
+// ─────────────────────────────────────────────
+let calcExpr='',justEvaled=false;
+function updateDisplay(){document.getElementById('expr-display').textContent=calcExpr;}
+function updateMain(v){document.getElementById('main-display').textContent=v;}
+function calcInput(ch){
+  if(justEvaled&&/^[\d.]$/.test(ch))calcExpr='';
+  justEvaled=false;calcExpr+=ch;updateDisplay();
+  try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(roundDisp(v));}catch(e){}
+}
+function calcEval(){
+  if(!calcExpr)return;
+  try{let v=safeEval(calcExpr);updateMain(isFinite(v)?roundDisp(v):'Fehler');document.getElementById('expr-display').textContent=calcExpr+' =';calcExpr=String(isFinite(v)?roundDisp(v):'');justEvaled=true;}
+  catch(e){updateMain('Fehler');}
+}
+function calcClear(){calcExpr='';updateDisplay();updateMain('0');justEvaled=false;}
+function calcBack(){calcExpr=calcExpr.slice(0,-1);updateDisplay();try{let v=safeEval(calcExpr);if(isFinite(v))updateMain(roundDisp(v));}catch(e){}}
+function calcNeg(){if(calcExpr){calcExpr='-('+calcExpr+')';updateDisplay();}}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('tab-calc').classList.contains('active'))return;
+  if(e.key>='0'&&e.key<='9')calcInput(e.key);
+  else if(e.key==='.')calcInput('.');
+  else if(e.key==='+')calcInput('+');else if(e.key==='-')calcInput('-');
+  else if(e.key==='*')calcInput('*');else if(e.key==='/'){ e.preventDefault();calcInput('/');}
+  else if(e.key==='(')calcInput('(');else if(e.key===')')calcInput(')');
+  else if(e.key==='^')calcInput('^');else if(e.key==='%')calcInput('%');
+  else if(e.key==='Enter'||e.key==='=')calcEval();
+  else if(e.key==='Backspace')calcBack();else if(e.key==='Escape')calcClear();
+});
+
+// ─────────────────────────────────────────────
+// WERTETABELLE
+// ─────────────────────────────────────────────
+function buildTable(){
+  const expr=document.getElementById('wt-func').value.trim();
+  const from=parseFloat(document.getElementById('wt-from').value);
+  const to=parseFloat(document.getElementById('wt-to').value);
+  const step=parseFloat(document.getElementById('wt-step').value);
+  const errEl=document.getElementById('wt-error');const res=document.getElementById('wt-result');
+  errEl.innerHTML='';res.innerHTML='';
+  if(!expr){errEl.innerHTML='<div class="error-msg">⚠ Funktion eingeben.</div>';return;}
+  if(isNaN(from)||isNaN(to)||from>to){errEl.innerHTML='<div class="error-msg">⚠ Ungültiger x-Bereich.</div>';return;}
+  if(isNaN(step)||step<=0){errEl.innerHTML='<div class="error-msg">⚠ Schrittweite muss > 0 sein.</div>';return;}
+  let html='<table><tr><th>x</th><th>f(x) = '+escHtml(expr)+'</th></tr>';
+  for(let x=from;x<=to+1e-9;x+=step){
+    x=Math.round(x*1e10)/1e10;
+    let fx;try{fx=safeEvalX(expr,x);fx=isFinite(fx)?roundDisp(fx):'—';}catch(e){fx='Fehler';}
+    html+='<tr><td>'+x+'</td><td>'+fx+'</td></tr>';
+  }
+  res.innerHTML=html+'</table>';
+}
+
+// ─────────────────────────────────────────────
+// BINOMIAL
+// ─────────────────────────────────────────────
+function binom(n,k){if(k<0||k>n)return 0;if(k===0||k===n)return 1;if(k>n-k)k=n-k;let r=1;for(let i=0;i<k;i++)r=r*(n-i)/(i+1);return r;}
+function binomPDF(n,p,k){return binom(n,k)*Math.pow(p,k)*Math.pow(1-p,n-k);}
+function binomCDF(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binomPDF(n,p,i);return s;}
+let binomChartInst=null,currentHL='eq';
+function setHL(m){currentHL=m;['eq','le','rng','none'].forEach(x=>{const b=document.getElementById('hl-'+x);if(b)b.classList.toggle('active',x===m);});}
+function binomLive(){
+  const n=parseInt(document.getElementById('bn-n').value);
+  const p=parseFloat(document.getElementById('bn-p').value);
+  const kEq=parseInt(document.getElementById('bn-k-eq').value);
+  const kLe=parseInt(document.getElementById('bn-k-le').value);
+  const k1=parseInt(document.getElementById('bn-k1').value);
+  const k2=parseInt(document.getElementById('bn-k2').value);
+  const res=document.getElementById('binom-result');
+  if(isNaN(n)||isNaN(p)||p<0||p>1||n<1){res.innerHTML='<div class="error-msg">⚠ n≥1, 0≤p≤1</div>';return;}
+  const pEq=isNaN(kEq)?'—':binomPDF(n,p,kEq).toFixed(8);
+  const pLe=isNaN(kLe)?'—':binomCDF(n,p,kLe).toFixed(8);
+  let pRng='—';if(!isNaN(k1)&&!isNaN(k2)&&k1<=k2){let s=0;for(let i=k1;i<=k2;i++)s+=binomPDF(n,p,i);pRng=s.toFixed(8);}
+  let html='<table><tr><th>Abfrage</th><th>Ergebnis</th></tr>';
+  html+='<tr><td style="color:#f9a825">P(X='+kEq+')</td><td>'+pEq+'</td></tr>';
+  html+='<tr><td style="color:#4fc3f7">P(X≤'+kLe+')</td><td>'+pLe+'</td></tr>';
+  html+='<tr><td style="color:#a8e063">P('+k1+'≤X≤'+k2+')</td><td>'+pRng+'</td></tr>';
+  html+='<tr><th>k</th><th>P(X=k)</th></tr>';
+  for(let k=0;k<=n;k++)html+='<tr><td>'+k+'</td><td>'+binomPDF(n,p,k).toFixed(6)+'</td></tr>';
+  res.innerHTML=html+'</table>';
+  const ks=[],data=[];
+  for(let k=0;k<=n;k++){ks.push(k);data.push(parseFloat(binomPDF(n,p,k).toFixed(10)));}
+  const maxP=Math.max(...data);
+  const barData=ks.map((k,i)=>({x:k,y:data[i]}));
+  function bCol(k){
+    if(currentHL==='eq')return k===kEq?'rgba(249,168,37,.9)':'rgba(180,180,180,.45)';
+    if(currentHL==='le')return k<=kLe?'rgba(79,195,247,.9)':'rgba(180,180,180,.45)';
+    if(currentHL==='rng')return(k>=k1&&k<=k2)?'rgba(168,224,99,.9)':'rgba(180,180,180,.45)';
+    return'rgba(233,69,96,.75)';
+  }
+  function bStr(k){
+    if(currentHL==='eq')return k===kEq?'#f57f17':'#aaa';
+    if(currentHL==='le')return k<=kLe?'#0277bd':'#aaa';
+    if(currentHL==='rng')return(k>=k1&&k<=k2)?'#558b2f':'#aaa';
+    return'#c0392b';
+  }
+  if(binomChartInst)binomChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('k','P(X=k)');
+  const bbp={id:'bb',afterDraw(ch){
+    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+    const bw=Math.abs(xA.getPixelForValue(1)-xA.getPixelForValue(0));
+    c.save();barData.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.fillStyle=bCol(pt.x);c.strokeStyle=bStr(pt.x);c.lineWidth=1;c.fillRect(px-bw/2,py,bw,y0-py);c.strokeRect(px-bw/2,py,bw,y0-py);});c.restore();
+  }};
+  binomChartInst=new Chart(document.getElementById('binom-chart'),{
+    type:'scatter',data:{datasets:[{data:[{x:0,y:0}]}]},
+    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(-.5,n+.5,0,maxP*1.22)},
+    plugins:[gp,ap,bbp]
+  });
+}
+
+// ─────────────────────────────────────────────
+// STABDIAGRAMM
+// ─────────────────────────────────────────────
+let stabChartInst=null;
+function drawStab(){
+  const xs=document.getElementById('stab-x').value.split(',').map(s=>parseFloat(s.trim()));
+  const ps=document.getElementById('stab-p').value.split(',').map(s=>parseFloat(s.trim()));
+  const ylabel=document.getElementById('stab-ylabel').value||'h';
+  const type=document.getElementById('stab-type').value;
+  const errEl=document.getElementById('stab-error');
+  const statsEl=document.getElementById('stab-stats');
+  errEl.innerHTML='';
+  const errs=[];
+  if(xs.some(isNaN))errs.push('⚠ Ungültige x-Werte.');
+  if(ps.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten/Wahrscheinlichkeiten.');
+  if(xs.length!==ps.length)errs.push('⚠ Anzahl x-Werte ('+xs.length+') ≠ Anzahl Einträge ('+ps.length+').');
+  if(!xs.some(isNaN)&&!ps.some(isNaN)){
+    if(ps.some(v=>v<0))errs.push('⚠ Negative Werte nicht erlaubt.');
+    if(type==='prob'){const s=ps.reduce((a,b)=>a+b,0);if(Math.abs(s-1)>.001)errs.push('⚠ Summe = '+s.toFixed(6)+' ≠ 1.');}
+  }
+  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');statsEl.style.display='none';if(stabChartInst){stabChartInst.destroy();stabChartInst=null;}return;}
+  const sum=ps.reduce((a,b)=>a+b,0),mu=xs.reduce((a,x,i)=>a+x*ps[i],0);
+  const varV=xs.reduce((a,x,i)=>a+(x-mu)**2*ps[i],0);
+  statsEl.style.display='block';
+  statsEl.innerHTML='<b>Σ:</b> '+sum.toFixed(6)+' &nbsp;|&nbsp; <b>E(X):</b> '+mu.toFixed(4)+' &nbsp;|&nbsp; <b>Var(X):</b> '+varV.toFixed(4)+' &nbsp;|&nbsp; <b>σ:</b> '+Math.sqrt(varV).toFixed(4);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),maxP=Math.max(...ps);
+  const padX=(maxX-minX)*.15||1;
+  const sd=xs.map((x,i)=>({x,y:ps[i]}));
+  if(stabChartInst)stabChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x',ylabel);
+  const slp={id:'sl',afterDraw(ch){
+    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+    c.save();c.strokeStyle='#1565c0';c.lineWidth=3;
+    sd.forEach(pt=>{const px=xA.getPixelForValue(pt.x),py=yA.getPixelForValue(pt.y);c.beginPath();c.moveTo(px,y0);c.lineTo(px,py);c.stroke();c.fillStyle='#1565c0';c.beginPath();c.arc(px,py,5,0,2*Math.PI);c.fill();});
+    c.restore();
+  }};
+  stabChartInst=new Chart(document.getElementById('stab-chart'),{
+    type:'scatter',data:{datasets:[{data:[{x:minX,y:0}]}]},
+    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(minX-padX,maxX+padX,0,maxP*1.25)},
+    plugins:[gp,ap,slp]
+  });
+}
+
+// ─────────────────────────────────────────────
+// HISTOGRAMM
+// ─────────────────────────────────────────────
+let histChartInst=null;
+function drawHist(){
+  const bounds=document.getElementById('hist-bounds').value.split(',').map(s=>parseFloat(s.trim()));
+  const freqs=document.getElementById('hist-freq').value.split(',').map(s=>parseFloat(s.trim()));
+  const errEl=document.getElementById('hist-error');const histEl=document.getElementById('hist-result');
+  errEl.innerHTML='';
+  const errs=[];
+  if(bounds.some(isNaN))errs.push('⚠ Ungültige Klassengrenzen.');
+  if(freqs.some(isNaN))errs.push('⚠ Ungültige Häufigkeiten.');
+  if(!bounds.some(isNaN)&&!freqs.some(isNaN)){
+    if(bounds.length!==freqs.length+1)errs.push('⚠ '+freqs.length+' Häufigkeiten brauchen '+(freqs.length+1)+' Grenzen.');
+    if(freqs.some(v=>v<0))errs.push('⚠ Negative Häufigkeiten nicht erlaubt.');
+    for(let i=1;i<bounds.length;i++)if(bounds[i]<=bounds[i-1])errs.push('⚠ Grenzen müssen aufsteigend sein.');
+  }
+  if(errs.length){errEl.innerHTML=errs.map(e=>'<div class="error-msg">'+e+'</div>').join('');histEl.style.display='none';if(histChartInst){histChartInst.destroy();histChartInst=null;}return;}
+  const widths=freqs.map((_,i)=>bounds[i+1]-bounds[i]);
+  const densities=freqs.map((f,i)=>f/widths[i]);
+  const total=freqs.reduce((a,b)=>a+b,0);
+  histEl.style.display='block';
+  let html='<table><tr><th>Klasse</th><th>Breite</th><th>h</th><th>rel.h</th><th>Dichte</th></tr>';
+  freqs.forEach((_,i)=>html+='<tr><td>['+bounds[i]+', '+bounds[i+1]+')</td><td>'+widths[i]+'</td><td>'+freqs[i]+'</td><td>'+(freqs[i]/total).toFixed(4)+'</td><td>'+densities[i].toFixed(4)+'</td></tr>');
+  histEl.innerHTML=html+'</table>';
+  const maxD=Math.max(...densities),xMin=bounds[0],xMax=bounds[bounds.length-1];
+  const hd={bounds,densities};
+  if(histChartInst)histChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','h/Δx');
+  const hbp={id:'hb',afterDraw(ch){
+    const c=ch.ctx,xA=ch.scales.x,yA=ch.scales.y,y0=yA.getPixelForValue(0);
+    c.save();hd.densities.forEach((d,i)=>{const x1=xA.getPixelForValue(hd.bounds[i]),x2=xA.getPixelForValue(hd.bounds[i+1]),yT=yA.getPixelForValue(d);c.fillStyle='rgba(255,138,101,.75)';c.strokeStyle='#d84315';c.lineWidth=1.5;c.fillRect(x1,yT,x2-x1,y0-yT);c.strokeRect(x1,yT,x2-x1,y0-yT);});c.restore();
+  }};
+  histChartInst=new Chart(document.getElementById('hist-chart'),{
+    type:'scatter',data:{datasets:[{data:[{x:xMin,y:0}]}]},
+    options:{responsive:true,animation:false,layout:{padding:CPAD},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xMin,xMax,0,maxD*1.2)},
+    plugins:[gp,ap,hbp]
+  });
+}
+
+// ─────────────────────────────────────────────
+// GRAPHENPLOTTER
+// ─────────────────────────────────────────────
+let graphChartInst=null,graphFuncCount=1;
+const GCOLS=['#e94560','#1565c0','#2e7d32','#f9a825','#6a1b9a','#00838f'];
+const GLBLS=['f₁','f₂','f₃','f₄','f₅','f₆'];
+function addGraphFunc(){
+  if(graphFuncCount>=6)return;
+  const id=graphFuncCount++;
+  const div=document.createElement('div');div.className='form-row graph-func-row';div.dataset.id=id;
+  const iid='graph-expr-'+id;
+  div.innerHTML='<label>'+GLBLS[id]+'(x) =</label><input type="text" class="graph-expr" id="'+iid+'" placeholder="Funktion…" style="width:240px" oninput="drawGraph()"><input type="color" class="graph-color" value="'+GCOLS[id]+'" oninput="drawGraph()">';
+  document.getElementById('graph-funcs').appendChild(div);
+  buildMiniKbd('graph-kbd',()=>lastGraphInput||document.getElementById(iid));
+}
+function removeGraphFunc(){
+  if(graphFuncCount<=1)return;
+  document.querySelectorAll('.graph-func-row')[graphFuncCount-1].remove();
+  graphFuncCount--;drawGraph();
+}
+function drawGraph(){
+  const xmin=parseFloat(document.getElementById('graph-xmin').value);
+  const xmax=parseFloat(document.getElementById('graph-xmax').value);
+  const pts=parseInt(document.getElementById('graph-pts').value)||600;
+  if(isNaN(xmin)||isNaN(xmax)||xmin>=xmax)return;
+  const rows=document.querySelectorAll('.graph-func-row');
+  const datasets=[];
+  rows.forEach(row=>{
+    const expr=row.querySelector('.graph-expr').value.trim();
+    const color=row.querySelector('.graph-color').value;
+    if(!expr)return;
+    const step=(xmax-xmin)/pts,dp=[];
+    for(let i=0;i<=pts;i++){const x=xmin+i*step;let y;try{y=safeEvalX(expr,x);if(!isFinite(y))y=null;}catch(e){y=null;}dp.push({x:Math.round(x*1e8)/1e8,y:y!==null?Math.round(y*1e8)/1e8:null});}
+    datasets.push({label:'',data:dp,borderColor:color,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,spanGaps:false,tension:0});
+  });
+  if(!datasets.length)return;
+  let allY=datasets.flatMap(d=>d.data.map(p=>p.y).filter(y=>y!==null));
+  if(!allY.length)return;
+  let yMin=Math.min(...allY),yMax=Math.max(...allY);
+  const yPad=(yMax-yMin)*.1||1;
+  if(graphChartInst)graphChartInst.destroy();
+  const gp=makeGridPlugin(),ap=makeArrowPlugin('x','f(x)');
+  graphChartInst=new Chart(document.getElementById('graph-chart'),{
+    type:'line',data:{datasets},
+    options:{responsive:true,animation:false,parsing:false,layout:{padding:{right:55,top:35,left:18,bottom:30}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:makeScales(xmin,xmax,yMin-yPad,yMax+yPad)},
+    plugins:[gp,ap]
+  });
+}
+
+// ─────────────────────────────────────────────
+// BAUMDIAGRAMM
+// ─────────────────────────────────────────────
+let treeMode='manual';
+function setTreeMode(m){
+  treeMode=m;
+  ['manual','binom','urn'].forEach(x=>{
+    document.getElementById('tree-panel-'+x).style.display=x===m?'':'none';
+    document.getElementById('tree-mode-'+x).classList.toggle('active',x===m);
+  });
+  if(m==='manual')renderTree();else buildAutoTree();
+}
+let treeData=[{branches:[{label:'A',prob:'0.6'},{label:'B',prob:'0.4'}]},{branches:[{label:'X',prob:'0.7'},{label:'Y',prob:'0.3'}]}];
+function manualAddLevel(){treeData.push({branches:[{label:'J',prob:'0.5'},{label:'N',prob:'0.5'}]});renderLevelEditor();renderTree();}
+function manualRemoveLevel(){if(treeData.length<=1)return;treeData.pop();renderLevelEditor();renderTree();}
+function renderLevelEditor(){
+  const w=document.getElementById('tree-level-editor');w.innerHTML='';
+  treeData.forEach((lv,li)=>{
+    const box=document.createElement('div');
+    box.style.cssText='background:#0d1a2e;border:1px solid #253a5e;border-radius:10px;padding:12px;margin-bottom:10px';
+    let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="color:#e94560;font-weight:bold">Stufe '+(li+1)+'</span><button onclick="addBranch('+li+')" style="background:#253a5e;border:1px solid #4fc3f7;color:#4fc3f7;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">+ Zweig</button>'+(lv.branches.length>1?'<button onclick="removeBranch('+li+')" style="background:#253a5e;border:1px solid #ff8a65;color:#ff8a65;padding:3px 10px;border-radius:7px;cursor:pointer;font-size:.8rem">− Zweig</button>':'')+'</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+    lv.branches.forEach((br,bi)=>{html+='<div style="display:flex;align-items:center;gap:5px;background:#16213e;border:1px solid #253a5e;border-radius:8px;padding:7px 10px"><span style="color:#aaa;font-size:.82rem">Z'+(bi+1)+':</span><input type="text" value="'+br.label+'" onchange="treeData['+li+'].branches['+bi+'].label=this.value;renderTree()" style="width:50px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem"><span style="color:#aaa;font-size:.82rem">p=</span><input type="text" value="'+br.prob+'" onchange="treeData['+li+'].branches['+bi+'].prob=this.value;renderTree()" style="width:70px;background:#0d0d1a;border:1px solid #253a5e;color:#fff;padding:4px 7px;border-radius:6px;font-size:.9rem"></div>';});
+    html+='</div>';box.innerHTML=html;w.appendChild(box);
+  });
+}
+function addBranch(li){treeData[li].branches.push({label:'?',prob:'0'});renderLevelEditor();renderTree();}
+function removeBranch(li){if(treeData[li].branches.length<=1)return;treeData[li].branches.pop();renderLevelEditor();renderTree();}
+function renderTree(){
+  const showProd=document.getElementById('tree-show-prod')?.checked??true;
+  const showSum=document.getElementById('tree-show-sum')?.checked??true;
+  const errEl=document.getElementById('tree-manual-error');errEl.innerHTML='';
+  const warns=[];
+  treeData.forEach((lv,li)=>{const s=lv.branches.reduce((a,b)=>a+(parseFloat(b.prob)||0),0);if(Math.abs(s-1)>.0001)warns.push('⚠ Stufe '+(li+1)+': Summe = '+s.toFixed(4)+' ≠ 1');});
+  if(warns.length)errEl.innerHTML=warns.map(w=>'<div class="error-msg">'+w+'</div>').join('');
+  const levels=treeData.map(lv=>lv.branches.map(b=>({label:b.label,prob:parseFloat(b.prob)||0,probStr:b.prob})));
+  drawTreeSVG(levels,showProd,showSum);
+}
+function buildAutoTree(){if(treeMode==='binom')buildBinomTree();else if(treeMode==='urn')buildUrnTree();}
+function buildBinomTree(){
+  const n=parseInt(document.getElementById('tb-n').value)||2;
+  const p=parseFloat(document.getElementById('tb-p').value);
+  const hit=document.getElementById('tb-hit').value||'T';
+  const miss=document.getElementById('tb-miss').value||'N';
+  const showProd=document.getElementById('tb-show-prod').checked;
+  const showSum=document.getElementById('tb-show-sum').checked;
+  if(isNaN(p)||p<0||p>1||n<1)return;
+  const q=1-p,levels=[];
+  for(let i=0;i<n;i++)levels.push([{label:hit,prob:p,probStr:fmtP(p)},{label:miss,prob:q,probStr:fmtP(q)}]);
+  drawTreeSVG(levels,showProd,showSum);
+}
+function buildUrnTree(){
+  const R=parseInt(document.getElementById('tu-r').value);
+  const B=parseInt(document.getElementById('tu-b').value);
+  const k=parseInt(document.getElementById('tu-k').value)||2;
+  const replace=document.getElementById('tu-replace').checked;
+  const showProd=document.getElementById('tu-show-prod').checked;
+  const showSum=document.getElementById('tu-show-sum').checked;
+  const errEl=document.getElementById('tu-error');errEl.innerHTML='';
+  if(isNaN(R)||isNaN(B)||R<0||B<0||(R+B)<1){errEl.innerHTML='<div class="error-msg">⚠ Ungültige Urne.</div>';return;}
+  if(!replace&&k>R+B){errEl.innerHTML='<div class="error-msg">⚠ k ≤ Gesamtzahl der Kugeln.</div>';return;}
+  if(replace){
+    const tot=R+B,levels=[];
+    for(let i=0;i<k;i++)levels.push([{label:'R',prob:R/tot,probStr:fmtFrac(R,tot)},{label:'B',prob:B/tot,probStr:fmtFrac(B,tot)}]);
+    drawTreeSVG(levels,showProd,showSum);
+  }else{drawUrnOhneZurueck({r:R,b:B},k,showProd,showSum);}
+}
+function fmtP(p){return String(parseFloat(p.toPrecision(6)));}
+function fmtFrac(a,b){return a+'/'+b;}
+function drawUrnOhneZurueck(root,k,showProd,showSum){
+  let nid=0;const nodes=[];
+  const r={id:nid++,parentId:null,label:'Start',probStr:'1',prob:1,depth:0,r:root.r,b:root.b,pathProb:1};
+  nodes.push(r);
+  function ex(par){
+    if(par.depth>=k)return;const tot=par.r+par.b;
+    if(par.r>0){const p=par.r/tot;const c={id:nid++,parentId:par.id,label:'R',probStr:fmtFrac(par.r,tot),prob:p,depth:par.depth+1,r:par.r-1,b:par.b,pathProb:par.pathProb*p};nodes.push(c);ex(c);}
+    if(par.b>0){const p=par.b/tot;const c={id:nid++,parentId:par.id,label:'B',probStr:fmtFrac(par.b,tot),prob:p,depth:par.depth+1,r:par.r,b:par.b-1,pathProb:par.pathProb*p};nodes.push(c);ex(c);}
+  }
+  ex(r);drawTreeSVGNodes(nodes,k,showProd,showSum);
+}
+function drawTreeSVG(levels,showProd,showSum){
+  const depth=levels.length;let leafCount=1;for(const l of levels)leafCount*=l.length;
+  function buildPaths(lv,pre,pp){if(lv===depth)return[[pre,pp]];const res=[];for(const br of levels[lv]){const np=[...pre,{label:br.label,probStr:br.probStr,prob:br.prob}];for(const p of buildPaths(lv+1,np,pp*br.prob))res.push(p);}return res;}
+  const allPaths=buildPaths(0,[],1);
+  const nm=new Map(),el=[];
+  const RH=56,CW=165,PX=65,PY=45;
+  const H=Math.max(320,leafCount*RH+PY*2),W=(depth+1)*CW+PX*2+(showProd?220:30);
+  const lYs=[];for(let i=0;i<leafCount;i++)lYs.push(PY+i*(H-PY*2)/(leafCount-1||1));
+  function gY(pre){
+    const key=JSON.stringify(pre);if(nm.has(key))return nm.get(key).y;
+    let ml=[];allPaths.forEach(([p],idx)=>{let m=true;for(let i=0;i<pre.length;i++)if(p[i].label!==pre[i].label||p[i].probStr!==pre[i].probStr){m=false;break;}if(m)ml.push(idx);});
+    return ml.reduce((a,i)=>a+lYs[i],0)/ml.length;
+  }
+  nm.set('[]',{x:PX,y:H/2,isRoot:true});
+  allPaths.forEach(([path],li)=>{
+    for(let d=0;d<path.length;d++){
+      const pre=path.slice(0,d+1),key=JSON.stringify(pre);
+      if(!nm.has(key))nm.set(key,{x:PX+(d+1)*CW,y:gY(pre),label:path[d].label});
+      const fk=JSON.stringify(path.slice(0,d)),ek=fk+'->'+key;
+      if(!el.find(e=>e.key===ek))el.push({key:ek,fromKey:fk,toKey:key,label:path[d].label,probStr:path[d].probStr,prob:path[d].prob});
+    }
+  });
+  let svg='<svg width="'+W+'" height="'+H+'" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">';
+  el.forEach(e=>{const f=nm.get(e.fromKey),t=nm.get(e.toKey);if(!f||!t)return;const mx=(f.x+t.x)/2;svg+='<path d="M'+f.x+','+f.y+' C'+mx+','+f.y+' '+mx+','+t.y+' '+t.x+','+t.y+'" fill="none" stroke="#1565c0" stroke-width="2"/>';const lx=f.x*.35+t.x*.65,ly=f.y*.35+t.y*.65;svg+='<text x="'+lx+'" y="'+(ly-11)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="#c0392b">'+escHtml(e.label)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+5)+'" text-anchor="middle" font-size="13" fill="#1a237e">'+escHtml(e.probStr)+'</text>';});
+  nm.forEach(n=>{if(n.isRoot){svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="9" fill="#e94560" stroke="#fff" stroke-width="2"/>';}else{svg+='<circle cx="'+n.x+'" cy="'+n.y+'" r="6" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';svg+='<text x="'+(n.x+11)+'" y="'+(n.y+5)+'" font-size="15" font-weight="bold" fill="#111">'+escHtml(n.label)+'</text>';}});
+  let tot=0;
+  if(showProd){allPaths.forEach(([path,prob],idx)=>{const lx=PX+depth*CW+30,ly=lYs[idx];const ps=path.map(s=>s.probStr).join(' · ');svg+='<text x="'+lx+'" y="'+(ly-7)+'" font-size="11" fill="#555">'+escHtml(ps)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+9)+'" font-size="13" font-weight="bold" fill="#2e7d32">= '+fmtFrac2(prob)+'</text>';tot+=prob;});}
+  if(showSum)document.getElementById('tree-path-sum').textContent='Σ = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
+  else document.getElementById('tree-path-sum').textContent='';
+  svg+='</svg>';
+  document.getElementById('tree-svg-wrap').innerHTML=svg;
+  document.getElementById('tree-svg-wrap').querySelector('svg').setAttribute('id','tree-svg');
+}
+function drawTreeSVGNodes(nodes,depth,showProd,showSum){
+  const leaves=nodes.filter(n=>n.depth===depth),lc=leaves.length;if(!lc)return;
+  const RH=56,CW=165,PX=65,PY=45,H=Math.max(320,lc*RH+PY*2),W=(depth+1)*CW+PX*2+230;
+  const lYs={};leaves.forEach((n,i)=>lYs[n.id]=PY+i*(H-PY*2)/(lc-1||1));
+  function gDY(id){const d=lYs[id];if(d!==undefined)return[d];return nodes.filter(n=>n.parentId===id).flatMap(c=>gDY(c.id));}
+  const nY={};nodes.forEach(n=>{const ys=gDY(n.id);nY[n.id]=ys.reduce((a,b)=>a+b,0)/ys.length;});
+  const nX=n=>PX+n.depth*CW;
+  let svg='<svg width="'+W+'" height="'+H+'" style="display:block;font-family:\'Segoe UI\',sans-serif;background:#fff">';
+  nodes.forEach(n=>{if(n.parentId===null)return;const par=nodes.find(p=>p.id===n.parentId);const fx=nX(par),fy=nY[par.id],tx=nX(n),ty=nY[n.id],mx=(fx+tx)/2;svg+='<path d="M'+fx+','+fy+' C'+mx+','+fy+' '+mx+','+ty+' '+tx+','+ty+'" fill="none" stroke="#1565c0" stroke-width="2"/>';const lx=fx*.35+tx*.65,ly=fy*.35+ty*.65;svg+='<text x="'+lx+'" y="'+(ly-11)+'" text-anchor="middle" font-size="14" font-weight="bold" fill="#c0392b">'+escHtml(n.label)+'</text>';svg+='<text x="'+lx+'" y="'+(ly+5)+'" text-anchor="middle" font-size="13" fill="#1a237e">'+escHtml(n.probStr)+'</text>';});
+  nodes.forEach(n=>{const x=nX(n),y=nY[n.id];if(n.depth===0){svg+='<circle cx="'+x+'" cy="'+y+'" r="9" fill="#e94560" stroke="#fff" stroke-width="2"/>';}else{svg+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="#1565c0" stroke="#fff" stroke-width="1.5"/>';svg+='<text x="'+(x+11)+'" y="'+(y+5)+'" font-size="15" font-weight="bold" fill="#111">'+escHtml(n.label)+'</text>';}});
+  let tot=0;
+  if(showProd){leaves.forEach(leaf=>{const lx=nX(leaf)+28,ly=lYs[leaf.id];const pp=[];let cur=leaf;while(cur.parentId!==null){pp.unshift(cur.probStr);cur=nodes.find(n=>n.id===cur.parentId);}svg+='<text x="'+lx+'" y="'+(ly-7)+'" font-size="11" fill="#555">'+escHtml(pp.join(' · '))+'</text>';svg+='<text x="'+lx+'" y="'+(ly+9)+'" font-size="13" font-weight="bold" fill="#2e7d32">= '+fmtFrac2(leaf.pathProb)+'</text>';tot+=leaf.pathProb;});}
+  if(showSum)document.getElementById('tree-path-sum').textContent='Σ = '+fmtFrac2(tot)+' ≈ '+tot.toFixed(6);
+  else document.getElementById('tree-path-sum').textContent='';
+  svg+='</svg>';
+  document.getElementById('tree-svg-wrap').innerHTML=svg;
+  document.getElementById('tree-svg-wrap').querySelector('svg').setAttribute('id','tree-svg');
+}
+function fmtFrac2(p){if(!isFinite(p))return'?';for(let d=1;d<=10000;d++){const n=Math.round(p*d);if(Math.abs(n/d-p)<1e-9)return n===d?'1':(n===0?'0':n+'/'+d);}return parseFloat(p.toPrecision(5)).toString();}
+function exportTreeSVG(){const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml'}));a.download='baumdiagramm.svg';a.click();}
+function exportTreePNG(){
+  const svg=document.getElementById('tree-svg');if(!svg){alert('Kein Baum.');return;}
+  const w=parseInt(svg.getAttribute('width'))||800,h=parseInt(svg.getAttribute('height'))||600;
+  const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;
+  const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.scale(2,2);
+  const img=new Image();img.onload=()=>{c.drawImage(img,0,0);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='baumdiagramm.png';a.click();};
+  img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg.outerHTML)));
+}
+
+// ─────────────────────────────────────────────
+// INIT  (ein einziger DOMContentLoaded)
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  buildMiniKbd('wt-kbd',()=>document.getElementById('wt-func'));
+  buildMiniKbd('graph-kbd',()=>lastGraphInput||document.getElementById('graph-expr-0'));
+  setHL('eq');
+  buildTable();
+  binomLive();
+  drawStab();
+  drawHist();
+  drawGraph();
+  renderLevelEditor();
+  renderTree();
+});
+</script>
+</body>
+</html>
